@@ -1,0 +1,6 @@
+find_package(Boost 1.40 COMPONENTS system serialization date_time thread)
+MathLink_ADD_TM(eureqa.tm)
+include_directories(${MathLink_INCLUDE_DIR} ../eureqa_api ${Boost_INCLUDE_DIR})
+link_directories(${MathLink_LIBRARY_DIR})
+add_executable (eureqa eureqa.tm.c eureqa.cpp)
+target_link_libraries(eureqa ${MathLink_LIBRARIES} ${Boost_LIBRARIES})

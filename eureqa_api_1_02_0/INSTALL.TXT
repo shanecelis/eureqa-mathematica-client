@@ -1,0 +1,21 @@
+Eureqa API Installation:
+------------------------
+
+The Eureqa API is a header-only library - meaning it does not need 
+to be compiled. The base Eureqa API directory just needs to be 
+added to the include path of your project or compiler.
+
+If you unzipped the API to "c:\", you should now have a directory 
+at "c:\eureqa_api_1_00_0\". This is your root Eureqa API path; add
+it to your include path.
+
+You should now be able to include the Eurqa headers using:
+
+#include <eureqa/eureqa.h>
+
+A detailed, step-by-step, setup guide is available for windows, linux, and mac at:
+
+    http://code.google.com/p/eureqa-api/
+
+Eureqa also requires the Boost C++ Libraries with compiled binaries.
+You can obtain Boost at http://www.boost.org/
