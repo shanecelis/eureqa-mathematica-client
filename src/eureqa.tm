@@ -1,39 +1,3 @@
-:Evaluate: BeginPackage["EureqaClient`"]
-:Evaluate:  eureqaSymbols = {ConnectTo, Disconnect, SendDataSet, SendOptions, StartSearch, PauseSearch, EndSearch, QueryProgress, QueryFrontier, Solution, FormulaText, Fitness, Score, Complexity, Age, Generations, GenerationsPerSec, Evaluations, EvaluationsPerSec, TotalPopulationSize, FormulaTextToExpression, ClearSolutionFrontier, AddToSolutionFrontier, GetSolutionFrontier, SearchProgress, IsConnected}
-:Evaluate:  Apply[Unprotect, eureqaSymbols]
-
-:Evaluate:	ConnectTo::usage = "ConnectTo[host] connects to the Eureqa server on host."
-:Evaluate:  ConnectTo::conn = "There is already a connection."
-:Evaluate:  ConnectTo::err = "Unable to connect to Eureqa server."
-
-:Evaluate:  Disconnect::usage = "Disconnect[] disconnects from a Eureqa server."
-:Evaluate:  SendDataSet::usage = "SendDataSet[data] sends the data to the Eureqa server with default labels \"xi\" for each column i.\nSendDataSet[data, {l1, l2, ...}] send the data to the Eureqa server with given labels li for each column i."
-:Evaluate:  SendDataSet::readerr = "Error reading data matrix."
-:Evaluate:  SendDataSet::colmis = "Invalid number of labels: columns of data do not equal length of list of labels."
-:Evaluate:  Map[(#::noconn = "Not connected to a Eureqa server.")&, {SendDataSet,SendOptions, StartSearch, PauseSearch, EndSearch, QueryProgress, Disconnect}]
-:Evaluate:  StartSearch::err = "Error starting search."
-:Evaluate:  PauseSearch::err = "Error pausing search."
-:Evaluate:  EndSearch::err = "Error ending search."
-:Evaluate:  QueryProgress::err = "Error querying progress."
-:Evaluate:  QueryFrontier::err = "Error querying frontier."
-
-:Evaluate:  FormulaTextToExpression::usage = "Converts a string of the form 'f(x,y,z) = x*sin(y) + z' into an expression: x Sin[y] + z"
-
-:Evaluate:  FormulaTextToExpression::inval = "Invalid formula text given '``'."
-:Evaluate:  NewSolutionFrontier::usage = "NewSolutionFrontier[] returns a SolutionFrontier[id, {sol1, sol2}]"
-:Evaluate:  AddToSolutionFrontier::usage = "AddToSolutionFrontier[front, sol] adds a solution to the frontier and returns a SolutionFrontier[id, {sol1, sol2}]"
-:Evaluate:  SolutionInfo::badform = "Invalid form of SolutionInfo '``'."
-
-
-
-:Evaluate: Begin["EureqaClient`Private`"]
-:Evaluate:  FormulaTextToExpression[""] := Null
-:Evaluate:  FormulaTextToExpression[s_String] := Module[{rhs}, If[StringCount[s, "="] == 1, rhs = StringReplace[StringSplit[s, "="][[2]], "e" -> "(10)^"], Message[FormulaTextToExpression::inval, s]; $Failed]; ToExpression[rhs, TraditionalForm]]
-
-:Evaluate: get::nofield = "No such field '``' in expression '``'."
-:Evaluate: get[s_, field_] := Module[{result}, result = field /. s; If[result === field, Message[get::nofield, field, s]; $Failed, result]]
-
-:Evaluate: GetSolutionInfoHelper[sol_SolutionInfo] := Module[{list}, list = Sort[List @@ sol]; Check[ Map[get[list, #] &, {FormulaText, Score, Fitness, Complexity, Age}], Message[SolutionInfo::badform, sol]; $Failed] ]
 
 //void _connect P(( char* host));
 
@@ -168,21 +132,13 @@
 :End:
 
 
-// void _add_to_solution_frontier P(());
-
-:Evaluate: AddToSolutionFrontier[sol_SolutionInfo] := Check[AddToSolutionFrontierHelper[GetSolutionInfoHelper[sol]], Message[AddToSolutionFrontier::err]; $Failed]
-
-:Evaluate: AddToSolutionFrontier[prog_SearchProgress] := AddToSolutionFrontier[Solution /. (List @@ prog)]
+// void _add_to_solution_frontier_helper2 P(());
 
 :Begin:
-:Function:       _add_to_solution_frontier_helper
-:Pattern:        AddToSolutionFrontierHelper[members_List]
-:Arguments:      {members}
-:ArgumentTypes:  { Manual }
+:Function:       _add_to_solution_frontier_helper2
+:Pattern:        AddToSolutionFrontierHelper[text_String, score_Real, fitness_Real, complexity_Real, age_Integer]
+:Arguments:      {text, score, fitness, complexity, age}
+:ArgumentTypes:  {String, Real64, Real64, Real64, Integer }
 :ReturnType:     Manual
 :End:
 
-:Evaluate:  Apply[Protect, eureqaSymbols]
-:Evaluate:  Remove[eureqaSymbols]
-:Evaluate:	End[ ]
-:Evaluate:	EndPackage[ ]

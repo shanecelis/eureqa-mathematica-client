@@ -1,4 +1,5 @@
 find_package(Boost 1.40 COMPONENTS system serialization date_time thread)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 MathLink_ADD_TM(eureqa.tm)
 include_directories(${MathLink_INCLUDE_DIR} ../eureqa_api ${Boost_INCLUDE_DIR})
 

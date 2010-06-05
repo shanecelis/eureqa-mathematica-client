@@ -13,12 +13,19 @@
 #include <iostream>
 #include <eureqa/eureqa.h>
 
+#define FAILED_WITH_MESSAGE(msg) \
+        MLClearError(stdlink); \
+        MLNewPacket(stdlink); \
+        MLEvaluate(stdlink, (char *) "Message[" msg "]"); \
+        MLNextPacket(stdlink); \
+        MLNewPacket(stdlink); \
+        MLPutSymbol(stdlink, (char *) "$Failed")
+
 extern "C" {
 #include "mathlink.h"
 }
-//extern "C" int _connect( char* host);
-extern "C" {
 
+extern "C" {
 void _connect(char const* host);
 void _is_connected();
 void _disconnect();
@@ -33,6 +40,9 @@ void _query_progress();
 void _query_frontier();
 void _get_solution_frontier();
 void _add_to_solution_frontier_helper();
+void _add_to_solution_frontier_helper2(const char* text, double score, 
+                                       double fitness, double complexity,
+                                       int    age);
 void _clear_solution_frontier();
 }
 
@@ -49,6 +59,8 @@ int ensure_connected(const char *s)
     if (! conn.is_connected()) {
         char msg[256];
         snprintf(msg, 256, "Message[%s::noconn]",s); 
+        MLClearError(stdlink); 
+        MLNewPacket(stdlink);
         MLEvaluate(stdlink, msg);
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
@@ -64,10 +76,7 @@ int ensure_connected(const char *s)
 void _connect(char const* host)
 {
     if (conn.is_connected()) {
-         MLEvaluate(stdlink, (char *) "Message[ConnectTo::conn]"); 
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("ConnectTo::conn");
         return;
     }
 
@@ -78,10 +87,7 @@ void _connect(char const* host)
           MLPutInteger(stdlink, next_conn_id);
         next_conn_id++;
     } else {
-        MLEvaluate(stdlink, (char *) "Message[ConnectTo::err]"); 
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("ConnectTo::err");
     }
 }
 
@@ -97,10 +103,7 @@ void _is_connected()
 void _disconnect()
 {
     if (! conn.is_connected()) {
-        MLEvaluate(stdlink, (char *) "Message[Disconnect::noconn]"); 
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("Disconnect::noconn");
         return;
     }
 
@@ -118,11 +121,8 @@ void _send_data_set_maybe_labels(bool labels) {
     long i,j;
 
     if(! MLGetRealArray(stdlink, &data, &dims, &heads, &d)) {
-            MLEvaluate(stdlink, (char *) "Message[SendDataSet::readerr]"); 
-            MLNextPacket(stdlink); 
-            MLNewPacket(stdlink); 
-            MLPutSymbol(stdlink, (char *) "$Failed");
-            return;
+        FAILED_WITH_MESSAGE("SendDataSet::readerr");
+        return;
     }
     eureqa::data_set dataset(dims[0], dims[1]); // holds the data
     for(i=0; i<dims[0]; i++) 
@@ -164,10 +164,7 @@ void _send_data_set_maybe_labels(bool labels) {
         MLDisownRealArray(stdlink, data, dims, heads, d);
     } else {
         MLDisownRealArray(stdlink, data, dims, heads, d);
-        MLEvaluate(stdlink, (char *) "Message[SendDataSet::err]"); 
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("SendDataSet::err");
     }
 }
 
@@ -189,10 +186,7 @@ void _send_options(char const* model)
     if (conn.send_options(options)) {
         MLPutSymbol(stdlink, (char *) "Null");        
     } else {
-        MLEvaluate(stdlink, (char *) "Message[SendOptions::err]"); 
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("SendOptions::err");
     }
 }
 
@@ -202,10 +196,7 @@ void _start_search()
     if (conn.start_search()) {
         MLPutSymbol(stdlink, (char *) "Null");
     } else { 
-        MLEvaluate(stdlink, (char *) "Message[StartSearch::err]"); 
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("StartSearch::err");
     }
 }
 
@@ -215,10 +206,7 @@ void _pause_search()
     if (conn.pause_search()) {
         MLPutSymbol(stdlink, (char *) "Null");
     } else { 
-        MLEvaluate(stdlink, (char *) "Message[PauseSearch::err]"); 
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("PauseSearch::err");
     }
 }
 
@@ -228,10 +216,7 @@ void _end_search()
     if (conn.end_search()) {
         MLPutSymbol(stdlink, (char *) "Null");
     } else { 
-        MLEvaluate(stdlink, (char *) "Message[EndSearch::err]"); 
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("EndSearch::err");
     }
 }
 
@@ -326,10 +311,7 @@ void _query_progress()
             MLPutSymbol(stdlink, (char *) "TotalPopulationSize");
             MLPutDouble(stdlink, progress.total_population_size_);
     } else {
-        MLEvaluate(stdlink, (char *) "Message[QueryProgress::err]");
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("QueryProgress::err");
     }
 }
 
@@ -341,10 +323,7 @@ void _query_frontier() {
             put_solution_info(front[i]);
         }
     } else {
-        MLEvaluate(stdlink, (char *) "Message[QueryFrontier::err]");
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("QueryFrontier::err");
     }
 }
 
@@ -370,21 +349,18 @@ void _get_solution_frontier() {
 
 void _add_to_solution_frontier_helper() {
 
+    printf("BEGIN add_to_solution_frontier_helper\n");
     long n;
     eureqa::solution_info sol;
+    printf("1 add_to_solution_frontier_helper\n");
+
     if (! MLCheckFunction(stdlink, (char *) "List", &n)) {
-        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::err]");
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::err");
         return;
     } 
-
+    printf("2 add_to_solution_frontier_helper\n");
     if (n != 5) {
-        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::invlen]");
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::invlen");
         return;
     }
     // I'm going to pull the members the same way they're place onto the list
@@ -396,46 +372,37 @@ void _add_to_solution_frontier_helper() {
     double complexity;
     int    age;
 
+    printf("3 add_to_solution_frontier_helper\n");
     if (! MLGetString(stdlink, &text)) {
-        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"text\"]");
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
         return;
     } 
 
+    printf("4 add_to_solution_frontier_helper\n");
     if (! MLGetDouble(stdlink, &score)) {
-        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"score\"]");
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
         return;
     } 
 
+    printf("5 add_to_solution_frontier_helper\n");
     if (! MLGetDouble(stdlink, &fitness)) {
-        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"fitness\"]");
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
         return;
     } 
 
+    printf("6 add_to_solution_frontier_helper\n");
     if (! MLGetDouble(stdlink, &complexity)) {
-        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"complexity\"]");
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
         return;
     } 
 
+    printf("7 add_to_solution_frontier_helper\n");
     if (! MLGetInteger(stdlink, &age)) {
-        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"age\"]");
-        MLNextPacket(stdlink); 
-        MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, (char *) "$Failed");
+        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
         return;
     } 
 
+    printf("8 add_to_solution_frontier_helper\n");
     // XXX I might leak this string if anything fails above.
     sol.text_ = text;
     MLReleaseString(stdlink, text);
@@ -446,6 +413,22 @@ void _add_to_solution_frontier_helper() {
     front.add(sol);
     put_solution_frontier(front);
 }
+
+void _add_to_solution_frontier_helper2(const char* text, double score, 
+                                       double fitness, double complexity,
+                                       int    age)
+{
+    printf("BEGIN add_to_solution_frontier_helper 2\n");
+    eureqa::solution_info sol;
+    sol.text_ = text;
+    sol.score_ = score;
+    sol.fitness_ = fitness;
+    sol.complexity_ = complexity;
+    sol.age_ = age;
+    front.add(sol);
+    put_solution_frontier(front);
+}
+
 
 
 #if WINDOWS_MATHLINK
