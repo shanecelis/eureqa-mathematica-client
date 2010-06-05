@@ -44,7 +44,7 @@ static int next_conn_id = 1;
 eureqa::solution_frontier front;
 static int next_front_id = 1;
 
-int ensure_connected(char *s)
+int ensure_connected(const char *s)
 {
     if (! conn.is_connected()) {
         char msg[256];
@@ -64,53 +64,53 @@ int ensure_connected(char *s)
 void _connect(char const* host)
 {
     if (conn.is_connected()) {
-        MLEvaluate(stdlink, "Message[ConnectTo::conn]"); 
+         MLEvaluate(stdlink, (char *) "Message[ConnectTo::conn]"); 
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
         return;
     }
 
     // It would be nice if we respect abort requests.
     if (conn.connect(host)) {
         // We connected.
-        MLPutFunction(stdlink, "ConnectionInfo", 1); 
+        MLPutFunction(stdlink, (char *) "ConnectionInfo", 1); 
           MLPutInteger(stdlink, next_conn_id);
         next_conn_id++;
     } else {
-        MLEvaluate(stdlink, "Message[ConnectTo::err]"); 
+        MLEvaluate(stdlink, (char *) "Message[ConnectTo::err]"); 
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
     }
 }
 
 void _is_connected()
 {
     if (conn.is_connected()) {
-        MLPutSymbol(stdlink, "True");
+        MLPutSymbol(stdlink, (char *) "True");
     } else {
-        MLPutSymbol(stdlink, "False");
+        MLPutSymbol(stdlink, (char *) "False");
     }
 }
 
 void _disconnect()
 {
     if (! conn.is_connected()) {
-        MLEvaluate(stdlink, "Message[Disconnect::noconn]"); 
+        MLEvaluate(stdlink, (char *) "Message[Disconnect::noconn]"); 
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
         return;
     }
 
     // It would be nice if we respect request for an abort.
     conn.disconnect();
-    MLPutSymbol(stdlink, "Null");
+    MLPutSymbol(stdlink, (char *) "Null");
 }
 
 void _send_data_set_maybe_labels(bool labels) {
-    if (ensure_connected("SendDataSet")) return;
+    if (ensure_connected((char *) "SendDataSet")) return;
     double *data;
     long *dims;                 // dimensions
     char **heads;
@@ -118,10 +118,10 @@ void _send_data_set_maybe_labels(bool labels) {
     long i,j;
 
     if(! MLGetRealArray(stdlink, &data, &dims, &heads, &d)) {
-            MLEvaluate(stdlink, "Message[SendDataSet::readerr]"); 
+            MLEvaluate(stdlink, (char *) "Message[SendDataSet::readerr]"); 
             MLNextPacket(stdlink); 
             MLNewPacket(stdlink); 
-            MLPutSymbol(stdlink, "$Failed");
+            MLPutSymbol(stdlink, (char *) "$Failed");
             return;
     }
     eureqa::data_set dataset(dims[0], dims[1]); // holds the data
@@ -141,10 +141,10 @@ void _send_data_set_maybe_labels(bool labels) {
             MLReleaseSymbol(stdlink, lhead);
             MLDisownRealArray(stdlink, data, dims, heads, d);
 
-            MLEvaluate(stdlink, "Message[SendDataSet::colmis]"); 
+            MLEvaluate(stdlink, (char *) "Message[SendDataSet::colmis]"); 
             MLNextPacket(stdlink); 
             MLNewPacket(stdlink); 
-            MLPutSymbol(stdlink, "$Failed");
+            MLPutSymbol(stdlink, (char *) "$Failed");
             return;
         }
         for (int i = 0; i < n; i++) {
@@ -164,10 +164,10 @@ void _send_data_set_maybe_labels(bool labels) {
         MLDisownRealArray(stdlink, data, dims, heads, d);
     } else {
         MLDisownRealArray(stdlink, data, dims, heads, d);
-        MLEvaluate(stdlink, "Message[SendDataSet::err]"); 
+        MLEvaluate(stdlink, (char *) "Message[SendDataSet::err]"); 
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
     }
 }
 
@@ -187,12 +187,12 @@ void _send_options(char const* model)
     eureqa::search_options options(model); // holds the search options
     std::cerr << options.summary() << std::endl;
     if (conn.send_options(options)) {
-        MLPutSymbol(stdlink, "Null");        
+        MLPutSymbol(stdlink, (char *) "Null");        
     } else {
-        MLEvaluate(stdlink, "Message[SendOptions::err]"); 
+        MLEvaluate(stdlink, (char *) "Message[SendOptions::err]"); 
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
     }
 }
 
@@ -200,12 +200,12 @@ void _start_search()
 {
     if (ensure_connected("StartSearch")) return;
     if (conn.start_search()) {
-        MLPutSymbol(stdlink, "Null");
+        MLPutSymbol(stdlink, (char *) "Null");
     } else { 
-        MLEvaluate(stdlink, "Message[StartSearch::err]"); 
+        MLEvaluate(stdlink, (char *) "Message[StartSearch::err]"); 
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
     }
 }
 
@@ -213,12 +213,12 @@ void _pause_search()
 {
     if (ensure_connected("PauseSearch")) return;
     if (conn.pause_search()) {
-        MLPutSymbol(stdlink, "Null");
+        MLPutSymbol(stdlink, (char *) "Null");
     } else { 
-        MLEvaluate(stdlink, "Message[PauseSearch::err]"); 
+        MLEvaluate(stdlink, (char *) "Message[PauseSearch::err]"); 
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
     }
 }
 
@@ -226,12 +226,12 @@ void _end_search()
 {
     if (ensure_connected("EndSearch")) return;
     if (conn.end_search()) {
-        MLPutSymbol(stdlink, "Null");
+        MLPutSymbol(stdlink, (char *) "Null");
     } else { 
-        MLEvaluate(stdlink, "Message[EndSearch::err]"); 
+        MLEvaluate(stdlink, (char *) "Message[EndSearch::err]"); 
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
     }
 }
 
@@ -263,37 +263,37 @@ void put_solution_info(eureqa::solution_info solution)
 
     }
 
-        MLPutFunction(stdlink, "SolutionInfo", loopback ? 6 : 5); 
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "FormulaText");
+        MLPutFunction(stdlink, (char *) "SolutionInfo", loopback ? 6 : 5); 
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "FormulaText");
             MLPutString(stdlink, solution.text_.c_str());
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "Score");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "Score");
             MLPutDouble(stdlink, solution.score_);
 
           if (loopback) {
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "Expression");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "Expression");
             MLTransferExpression(stdlink, loopback);
             MLClose(loopback);
             loopback = 0;
           }            
 
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "Fitness");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "Fitness");
             MLPutDouble(stdlink, solution.fitness_);
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "Complexity");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "Complexity");
             MLPutDouble(stdlink, solution.complexity_);
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "Age");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "Age");
             MLPutInteger(stdlink, solution.age_);
 }
 
 void get_solution_info(eureqa::solution_info& solution)
 {
     long n;
-    if (! MLCheckFunction(stdlink, "SolutionInfo", &n)) {    
+    if (! MLCheckFunction(stdlink, (char *) "SolutionInfo", &n)) {    
         std::cerr << " not a solution info input\n";
     }
 
@@ -306,51 +306,51 @@ void _query_progress()
     eureqa::search_progress progress; // recieves the progress and new solutions
     if (conn.query_progress(progress)) {
         // SearchProgress[Solution -> soln, Generations -> g, GenerationsPerSec -> gps, Evaluations -> e, EvaluationsPerSec -> eps, TotalPopulationSize -> s]
-        MLPutFunction(stdlink, "SearchProgress", 6); 
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "Solution");
+        MLPutFunction(stdlink, (char *) "SearchProgress", 6); 
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "Solution");
             put_solution_info(progress.solution_);
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "Generations");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "Generations");
             MLPutDouble(stdlink, progress.generations_);
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "GenerationsPerSec");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "GenerationsPerSec");
             MLPutDouble(stdlink, progress.generations_per_sec_);
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "Evaluations");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "Evaluations");
             MLPutDouble(stdlink, progress.evaluations_);
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "EvaluationsPerSec");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "EvaluationsPerSec");
             MLPutDouble(stdlink, progress.evaluations_per_sec_);
-          MLPutFunction(stdlink, "Rule", 2);
-            MLPutSymbol(stdlink, "TotalPopulationSize");
+          MLPutFunction(stdlink, (char *) "Rule", 2);
+            MLPutSymbol(stdlink, (char *) "TotalPopulationSize");
             MLPutDouble(stdlink, progress.total_population_size_);
     } else {
-        MLEvaluate(stdlink, "Message[QueryProgress::err]");
+        MLEvaluate(stdlink, (char *) "Message[QueryProgress::err]");
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
     }
 }
 
 void _query_frontier() {
     eureqa::solution_frontier front;
     if (conn.query_frontier(front)) {
-        MLPutFunction(stdlink, "SolutionFrontier", front.size()); 
+        MLPutFunction(stdlink, (char *) "SolutionFrontier", front.size()); 
         for (int i = 0; i < front.size(); i++) {
             put_solution_info(front[i]);
         }
     } else {
-        MLEvaluate(stdlink, "Message[QueryFrontier::err]");
+        MLEvaluate(stdlink, (char *) "Message[QueryFrontier::err]");
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
     }
 }
 
 void put_solution_frontier(eureqa::solution_frontier &front) {
-    MLPutFunction(stdlink, "SolutionFrontier", 1); 
-      MLPutFunction(stdlink, "List", front.size());
+    MLPutFunction(stdlink, (char *) "SolutionFrontier", 1); 
+      MLPutFunction(stdlink, (char *) "List", front.size());
         //MLPutInteger(stdlink, next_front_id);
         for (int i = 0; i < front.size(); i++) {
           put_solution_info(front[i]);
@@ -372,19 +372,19 @@ void _add_to_solution_frontier_helper() {
 
     long n;
     eureqa::solution_info sol;
-    if (! MLCheckFunction(stdlink, "List", &n)) {
-        MLEvaluate(stdlink, "Message[AddToSolutionFrontierHelper::err]");
+    if (! MLCheckFunction(stdlink, (char *) "List", &n)) {
+        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::err]");
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
         return;
     } 
 
     if (n != 5) {
-        MLEvaluate(stdlink, "Message[AddToSolutionFrontierHelper::invlen]");
+        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::invlen]");
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
         return;
     }
     // I'm going to pull the members the same way they're place onto the list
@@ -397,42 +397,42 @@ void _add_to_solution_frontier_helper() {
     int    age;
 
     if (! MLGetString(stdlink, &text)) {
-        MLEvaluate(stdlink, "Message[AddToSolutionFrontierHelper::geterr, \"text\"]");
+        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"text\"]");
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
         return;
     } 
 
     if (! MLGetDouble(stdlink, &score)) {
-        MLEvaluate(stdlink, "Message[AddToSolutionFrontierHelper::geterr, \"score\"]");
+        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"score\"]");
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
         return;
     } 
 
     if (! MLGetDouble(stdlink, &fitness)) {
-        MLEvaluate(stdlink, "Message[AddToSolutionFrontierHelper::geterr, \"fitness\"]");
+        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"fitness\"]");
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
         return;
     } 
 
     if (! MLGetDouble(stdlink, &complexity)) {
-        MLEvaluate(stdlink, "Message[AddToSolutionFrontierHelper::geterr, \"complexity\"]");
+        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"complexity\"]");
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
         return;
     } 
 
     if (! MLGetInteger(stdlink, &age)) {
-        MLEvaluate(stdlink, "Message[AddToSolutionFrontierHelper::geterr, \"age\"]");
+        MLEvaluate(stdlink, (char *) "Message[AddToSolutionFrontierHelper::geterr, \"age\"]");
         MLNextPacket(stdlink); 
         MLNewPacket(stdlink); 
-        MLPutSymbol(stdlink, "$Failed");
+        MLPutSymbol(stdlink, (char *) "$Failed");
         return;
     } 
 

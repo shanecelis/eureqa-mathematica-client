@@ -27,6 +27,9 @@
 #  MathLink_LIBRARIES:        required libraries: libML32i3, etc.
 #  MathLink_LIBRARY_DIR:      path for required libraries
 #  MathLink_MPREP_EXECUTABLE: path to mprep
+#  MathLink_MATH_EXECUTABLE:  path to math
+#  MathLink_SYSTEM_ID:        Mathematica's $SystemID
+#  MathLink_USER_BASE_DIR:    Mathematica User's base directory
 
 SET(MathLink_FOUND 0)
 IF( MathLink_FIND_VERSION )
@@ -81,6 +84,41 @@ find_program(MathLink_MPREP_EXECUTABLE
         ${MathLink_ROOT_DIR}\\CompilerAdditions\\mldev64\\bin
       )
 mark_as_advanced(MathLink_MPREP_EXECUTABLE)
+find_program(MathLink_MATH_EXECUTABLE 
+  NAMES math
+  PATHS ${MathLink_ROOT_DIR}/CompilerAdditions
+        ${MathLink_ROOT_DIR}\\CompilerAdditions\\mldev32\\bin
+        ${MathLink_ROOT_DIR}\\CompilerAdditions\\mldev64\\bin
+      )
+mark_as_advanced(MathLink_MATH_EXECUTABLE)
+
+MACRO (MathLink_MATH_EXEC command output_variable )
+      EXECUTE_PROCESS(COMMAND ${MathLink_MATH_EXECUTABLE} 
+      "-noinit" "-noprompt" "-run" "${command}; Quit[];" 
+      OUTPUT_VARIABLE ${output_variable})
+      #STRING(REGEX REPLACE "\"" "" MathLink_SYSTEM_ID "${MathLink_SYSTEM_ID}")
+ENDMACRO (MathLink_MATH_EXEC)
+
+MACRO (REMOVE_QUOTES variable_name)
+      STRING(REGEX REPLACE "\"" "" ${variable_name} "${${variable_name}}")
+ENDMACRO (REMOVE_QUOTES)
+
+MACRO (REMOVE_NEWLINES variable_name)
+      STRING(REGEX REPLACE "\n" "" ${variable_name} "${${variable_name}}")
+ENDMACRO (REMOVE_NEWLINES)
+
+
+MathLink_MATH_EXEC("Print[\$SystemID]" MathLink_SYSTEM_ID)
+REMOVE_QUOTES(MathLink_SYSTEM_ID)
+REMOVE_NEWLINES(MathLink_SYSTEM_ID)
+MESSAGE("system_id is ${MathLink_SYSTEM_ID}")
+
+#STRING(REGEX REPLACE "\"" "" MathLink_USER_BASE_DIR "${MathLink_USER_BASE_DIR}")
+MathLink_MATH_EXEC("Print[\$UserBaseDirectory]" MathLink_USER_BASE_DIR)
+REMOVE_QUOTES(MathLink_USER_BASE_DIR)
+REMOVE_NEWLINES(MathLink_USER_BASE_DIR)
+MESSAGE("user base dir is ${MathLink_USER_BASE_DIR}")
+
 
 IF(WIN32)
   IF(CMAKE_SIZEOF_VOID_P EQUAL 4)

@@ -6,6 +6,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake/mathlink" ${CMAKE_MODULE_PATH})
 
 find_package(MathLink 7.0.1)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 subdirs(
   src
   )
