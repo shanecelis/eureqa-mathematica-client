@@ -39,7 +39,37 @@ BeginPackage["EureqaClient`"];
                  GetSolutionFrontier, 
                  SearchProgress, 
                  SearchProgressGrid, 
-                 IsConnected}
+                 SearchOptions,
+                 IsConnected,
+                 DefaultBuildingBlocks,
+                 (* Arguments to SearchOptions *)
+                 SearchRelationship,
+                 BuildingBlocks,
+                 FitnessType,
+                 NormalizeFitnessBy,
+                 SolutionPopulationSize,
+                 PredictorPopulationSize,
+                 TrainerPopulationSize,
+                 SolutionCrossoverProbability,
+                 SolutionMutationProbability,
+                 PredictorCrossoverProbability,
+                 PredictorMutationProbability,
+                 (* Fitness Types *)
+                 AbsoluteError,
+                 SquaredError,
+                 RootSquaredError,
+                 LogarithmicError,
+                 ExplogError,
+                 Correlation,
+                 MinimizeDifference,
+                 AkaikeInformation,
+                 BayesianInformation,
+                 MaximumError,
+                 MedianError,
+                 ImplicitError,
+                 SlopeError,
+                 Count
+                 }
 
     Apply[Unprotect, eureqaSymbols];
 
@@ -64,20 +94,26 @@ BeginPackage["EureqaClient`"];
     NewSolutionFrontier::usage = "NewSolutionFrontier[] returns a SolutionFrontier[id, {sol1, sol2}]";
     AddToSolutionFrontier::usage = "AddToSolutionFrontier[sol] adds a solution to the frontier and returns a SolutionFrontier[id, {sol1, sol2}]";
     SolutionInfo::badform = "Invalid form of SolutionInfo '``'.";
+    DefaultBuildingBlocks = {"1.23", "a", "a+b", "a-b", "a*b", "a/b", "sin(a)", "cos(a)"};
+    (*AllBuildingBlocks = Where are these defined?*)
 
     Begin["EureqaClient`Private`"]; 
     reload::usage = "Reloads the mathlink executable.";
     AddToSolutionFrontierHelper::usage = "Blah";
-    load[] := Module[{}, mathlink = Install[$UserBaseDirectory <> "/Applications/EureqaClient/eureqa"]];
-    unload[] := Uninstall[mathlink];
-    reload[] := Module[{}, unload[]; load[]];
+    (*Set EureqaClient`Private`linkName = "XXX" so that you can run
+    the mathlink executable in a debugger or see its output.  It will
+    ask for a name at startup, give it your choice for "XXX".  *)
+    load[] := Module[{}, If[linkName === None, mathlink =
+    Install[$UserBaseDirectory <>
+    "/Applications/EureqaClient/eureqa"], mathlink = Install[linkName,
+    LinkMode -> Connect]] ]; unload[] := Uninstall[mathlink]; reload[]
+    := Module[{}, unload[]; load[]];
     If[Length[Names["EureqaClient`Private`mathlink"]] == 0,
       (* We've never seen the mathlink symbol before, so load it fresh. *)
       load[],
       (* We've seen the mathlink symbol before, so unload the last one
       before loading the new one. *)
       unload[]; load[]];
-    (*mathlink = Install["57", LinkMode -> Connect];*)
     FormulaTextToExpression[""] := Null;
     FormulaTextToExpression[s_String] := Module[{rhs}, 
               If[StringCount[s, "="] == 1, 

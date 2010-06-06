@@ -61,6 +61,17 @@
 :ReturnType:     Manual
 :End:
 
+// void _send_options P((void));
+
+:Begin:
+:Function:       _send_options_explicit
+:Pattern:        SendOptions[options_SearchOptions]
+:Arguments:      {options}
+:ArgumentTypes:  {Manual}
+:ReturnType:     Manual
+:End:
+
+
 // void _end_search P((char *));
 
 :Begin:

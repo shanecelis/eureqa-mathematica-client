@@ -21,3 +21,18 @@ INSTALL(DIRECTORY EureqaClient
                   DESTINATION ${MathLink_USER_BASE_DIR}/Applications)
 INSTALL(PROGRAMS eureqa 
               DESTINATION ${MathLink_USER_BASE_DIR}/Applications/EureqaClient)
+
+add_custom_target(install_workaround
+                  COMMAND make install
+                  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src)
+
+add_custom_target(run 
+                  COMMAND eureqa)
+
+add_dependencies(run install_workaround)
+
+add_custom_target(debug 
+                  COMMAND gdb --args eureqa)
+
+add_dependencies(debug install_workaround)
+

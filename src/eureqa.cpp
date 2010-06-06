@@ -12,6 +12,8 @@
 
 #include <iostream>
 #include <eureqa/eureqa.h>
+#include <boost/unordered_map.hpp>
+#include <cstring>
 
 #define FAILED_WITH_MESSAGE(msg) \
         MLClearError(stdlink); \
@@ -33,6 +35,7 @@ void _send_data_set_maybe_labels(bool labels);
 void _send_data_set();
 void _send_data_set_labels();
 void _send_options(char const* model);
+void _send_options_explicit();
 void _start_search();
 void _pause_search();
 void _end_search();
@@ -46,13 +49,172 @@ void _add_to_solution_frontier_helper2(const char* text, double score,
 void _clear_solution_frontier();
 }
 
-// We should make these instanceable.  Leaving it non-instanceable for
-// the moment.
 eureqa::connection conn;
 static int next_conn_id = 1;
-
 eureqa::solution_frontier front;
-static int next_front_id = 1;
+eureqa::search_options options; // holds the search options
+
+/*
+  Let's use a generic set of classes to handle getting and setting
+  integer, real, and string properties on the Eureqa members.  It'll
+  make the maintenance easier.
+ */
+class GetSet;
+boost::unordered_map<std::string, GetSet*> option_properties;
+
+class GetSet {
+    public:
+    virtual int update_data(const char* sym) = 0;
+};
+
+class StringGetSet : public GetSet {
+    std::string& data;
+    public:
+    StringGetSet(std::string& astr) : data(astr) { }
+    virtual int update_data(const char* sym) {
+        const char *str;
+        if (MLGetNext(stdlink) != MLTKSTR) {
+            FAILED_WITH_MESSAGE("SendOptions::expstr");
+            return 1;
+        }
+        if (! MLGetString(stdlink, &str)) {
+            FAILED_WITH_MESSAGE("SendOptions::failstr");
+            return 2;
+        }
+        printf("StringGetSet got '%s' for option '%s'\n", str, sym);
+        data = str;
+        MLReleaseString(stdlink, str);
+        return 0;
+    }
+};
+
+class IntegerGetSet : public GetSet {
+    int &data;
+    public:
+    IntegerGetSet(int &i) : data(i) { }
+    virtual int update_data(const char* sym) {
+        int i;
+        if (MLGetNext(stdlink) != MLTKINT) {
+            FAILED_WITH_MESSAGE("SendOptions::expint");
+            return 1;
+        }
+        if (! MLGetInteger(stdlink, &i)) {
+            FAILED_WITH_MESSAGE("SendOptions::failint");
+            return 2;
+        }
+        data = i;
+        return 0;
+    }
+};
+
+class RealGetSet : public GetSet {
+    float &data;
+    public:
+    RealGetSet(float &f) : data(f) { }
+    virtual int update_data(const char* sym) {
+        float f;
+        if (MLGetNext(stdlink) != MLTKREAL && MLGetNext(stdlink) != MLTKINT) {
+            FAILED_WITH_MESSAGE("SendOptions::expreal");
+            return 1;
+        }
+
+        if (! MLGetFloat(stdlink, &f)) {
+            FAILED_WITH_MESSAGE("SendOptions::failreal");
+            return 2;
+        }
+        data = f;
+        return 0;
+    }
+};
+
+class StringListGetSet : public GetSet {
+    std::vector<std::string> &data;
+    public:
+    StringListGetSet(std::vector<std::string> &l) : data(l) { }
+    virtual int update_data(const char* sym) {
+        long n;
+        data.clear();
+        if (! MLCheckFunction(stdlink, (char *) "List", &n)) {
+            FAILED_WITH_MESSAGE("SendOptions::explist");
+            return 1;
+        } 
+        for (int i = 0; i < n; i++) {
+            long m;
+            const char *str;
+            if (MLGetNext(stdlink) != MLTKSTR) {
+                FAILED_WITH_MESSAGE("SendOptions::expstr");
+                return 2;
+            }
+            if (! MLGetString(stdlink, &str)) {
+                FAILED_WITH_MESSAGE("SendOptions::failstr");
+                return 3;
+            }
+            data.push_back(str);
+            MLReleaseString(stdlink, str);
+        }
+    }
+};
+
+class MetricGetSet : public GetSet {
+    int &data;
+    boost::unordered_map<std::string, int> enum_values;
+    public:
+    MetricGetSet(int &i) : data(i) { 
+        enum_values["AbsoluteError"] = eureqa::fitness_types::absolute_error;
+        enum_values["SquaredError"] = eureqa::fitness_types::squared_error;
+        enum_values["RootSquaredError"] = eureqa::fitness_types::root_squared_error;
+        enum_values["LogarithmicError"] = eureqa::fitness_types::logarithmic_error;
+        enum_values["ExplogError"] = eureqa::fitness_types::explog_error;
+        enum_values["Correlation"] = eureqa::fitness_types::correlation;
+        enum_values["MinimizeDifference"] = eureqa::fitness_types::minimize_difference;
+        enum_values["AkaikeInformation"] = eureqa::fitness_types::akaike_information;
+        enum_values["BayesianInformation"] = eureqa::fitness_types::bayesian_information;
+        enum_values["MaximumError"] = eureqa::fitness_types::maximum_error;
+        enum_values["MedianError"] = eureqa::fitness_types::median_error;
+        enum_values["ImplicitError"] = eureqa::fitness_types::implicit_error;
+        enum_values["SlopeError"] = eureqa::fitness_types::slope_error;
+        enum_values["Count"] = eureqa::fitness_types::count;
+    }
+    virtual int update_data(const char* sym) {
+        const char *symbol;
+        if (! MLGetSymbol(stdlink, &symbol)) {
+            FAILED_WITH_MESSAGE("SendOptions::failsym");
+            return 1;
+        }
+        if (enum_values.find(symbol) == enum_values.end()) {
+            FAILED_WITH_MESSAGE("SendOptions::expsym");
+            return 2;
+        }
+        data = enum_values[symbol];
+        return 0;
+    }
+};
+
+
+int initialize_option_properties()
+{
+    if (option_properties.size() != 0)
+        return 0;
+    option_properties["SearchRelationship"] = new StringGetSet(options.search_relationship_);
+    option_properties["BuildingBlocks"] = new StringListGetSet(options.building_blocks_);
+    option_properties["NormalizeFitnessBy"] = new RealGetSet(options.normalize_fitness_by_);
+    option_properties["FitnessMetric"] = new MetricGetSet(options.fitness_metric_);
+    option_properties["SolutionPopulationSize"] = new IntegerGetSet(options.solution_population_size_);
+    option_properties["PredictorPopulationSize"] = new IntegerGetSet(options.predictor_population_size_);
+    option_properties["TrainerPopulationSize"] = new IntegerGetSet(options.trainer_population_size_);
+    option_properties["SolutionCrossoverProbability"] = new RealGetSet(options.solution_crossover_probability_);
+    option_properties["SolutionMutationProbability"] = new RealGetSet(options.solution_mutation_probability_);
+    option_properties["PredictorCrossoverProbability"] = new RealGetSet(options.predictor_crossover_probability_);
+    option_properties["PredictorMutationProbability"] = new RealGetSet(options.predictor_mutation_probability_);
+}
+
+int update_option(const char* sym) {
+    if (option_properties.find(sym) == option_properties.end()) {
+        // No such property
+        return 1;
+    }
+    return option_properties[sym]->update_data(sym);
+}
 
 int ensure_connected(const char *s)
 {
@@ -70,8 +232,6 @@ int ensure_connected(const char *s)
     return 0; // no error; connected
     
 }
-
-
 
 void _connect(char const* host)
 {
@@ -132,8 +292,10 @@ void _send_data_set_maybe_labels(bool labels) {
     if (labels) {
         const char *lhead;
         int n;
-        MLGetFunction(stdlink, &lhead, &n);
-        std::cerr << "got " << lhead << " and " << n << " with dims[1] " << dims[1] << std::endl;
+        if (! MLGetFunction(stdlink, &lhead, &n)) {
+            FAILED_WITH_MESSAGE("SendDataSet::invarg");
+            return;
+        }
         if (n != dims[1]) {
             // For some reason this block of code is not working correctly.
             // The executable dies quietly when it goes through here.
@@ -145,7 +307,10 @@ void _send_data_set_maybe_labels(bool labels) {
         }
         for (int i = 0; i < n; i++) {
             const char *label;
-            MLGetString(stdlink, &label);
+            if (!MLGetString(stdlink, &label)) {
+                FAILED_WITH_MESSAGE("SendDataSet::invarg");
+                return;
+            }
             dataset.X_symbols_[i] = label;
             MLReleaseString(stdlink, label);
         }
@@ -185,6 +350,65 @@ void _send_options(char const* model)
         FAILED_WITH_MESSAGE("SendOptions::err");
     }
 }
+
+void _send_options_explicit()
+{
+    printf("BEGIN _send_options_explicit\n");
+    if (ensure_connected("SendOptions")) return;
+    
+    //if (...)
+    initialize_option_properties();
+    options.set_default_options();
+    options.set_default_building_blocks();
+    //std::cerr << options.summary() << std::endl;
+    long n;
+    if (! MLCheckFunction(stdlink, (char *) "SearchOptions", &n)) {
+        FAILED_WITH_MESSAGE("SendOptions::invarg");
+        return;
+    } 
+    printf("n = %ld\n", n);
+    for (int i = 0; i < n; i++) {
+        long m;
+        const char *head;
+        if (! MLCheckFunction(stdlink, "Rule", &m)) {
+            FAILED_WITH_MESSAGE("SendOptions::invarg2");
+            return;
+        } 
+        printf("m = %ld\n", m);
+
+        // if (! MLCheckFunction(stdlink, (char *) "Rule", &m)) {
+        //     FAILED_WITH_MESSAGE("SendOptions::invarg2");
+        //     return;
+        // } 
+        if (m != 2) {
+            FAILED_WITH_MESSAGE("SendOptions::invarg3");
+            return;
+        }
+
+        int o;
+        const char *sym;
+        if (! MLGetSymbol(stdlink, &sym)) {
+            FAILED_WITH_MESSAGE("SendOptions::invarg4");
+            return;
+        } 
+        printf("Got options for '%s'\n", sym);
+        int err = update_option(sym);
+        printf("err =  '%d'\n", err);
+        // const char *formula;
+        // if (! MLGetString(stdlink, &formula)) {
+        //     FAILED_WITH_MESSAGE("SendOptions::invarg5");
+        //     return;
+        // }
+        // options.search_relationship_ = formula;
+    }
+    
+    if (conn.send_options(options)) {
+        MLPutSymbol(stdlink, (char *) "Null");        
+    } else {
+        FAILED_WITH_MESSAGE("SendOptions::err");
+    }
+}
+
 
 void _start_search()
 {
@@ -335,7 +559,6 @@ void put_solution_frontier(eureqa::solution_frontier &front) {
 void _clear_solution_frontier() {
     front.clear();
     put_solution_frontier(front);
-    next_front_id++;
 }
 
 void _get_solution_frontier() {
@@ -414,7 +637,6 @@ void _add_to_solution_frontier_helper2(const char* text, double score,
                                        double fitness, double complexity,
                                        int    age)
 {
-    printf("BEGIN add_to_solution_frontier_helper 2\n");
     eureqa::solution_info sol;
     sol.text_ = text;
     sol.score_ = score;
