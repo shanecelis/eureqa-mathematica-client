@@ -434,34 +434,9 @@ void _send_options_explicit(int n)
 {
     if (ensure_connected("SendOptions")) return;
     
-    //if (...)
     initialize_option_properties();
     options.set_default_options();
     options.set_default_building_blocks();
-    //std::cerr << options.summary() << std::endl;
-    // long n;
-    // if (! MLCheckFunction(stdlink, (char *) "SearchOptions", &n)) {
-    //     FAILED_WITH_MESSAGE("SendOptions::expso");
-    //     return;
-    // } 
-
-    // int n;
-    // const char *head;
-    // if (! MLGetFunction(stdlink, &head, &n)) {
-    //     failed_with_message1("SendOptions::expsox", head);
-    // }
-    //     failed_with_message1("SendOptions::expsoy", head);
-    //long n;
-    // if (! MLCheckFunction(stdlink, (char *) "SendOptions", &n)) {
-    //     FAILED_WITH_MESSAGE("SendOptions::expso");
-    //     return;
-    // } 
-
-    //failed_with_message1("SendOptions::expso1", resolve_mltkenum(MLGetType(stdlink)));
-    // if (! MLGetArgCount(stdlink, &n)) {
-    //     failed_with_message1("SendOptions::expso1", resolve_mltkenum(MLGetType(stdlink)));
-    //     return;
-    // }
     for (int i = 0; i < n; i++) {
         long m;
         const char *head;
@@ -470,7 +445,7 @@ void _send_options_explicit(int n)
             return;
         } 
         if (m != 2) {
-            FAILED_WITH_MESSAGE("SendOptions::exprule2");
+            FAILED_WITH_MESSAGE("SendOptions::expruletwo");
             return;
         }
 

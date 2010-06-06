@@ -10,71 +10,84 @@ BeginPackage["EureqaClient`"];
 (* Let's handle our symbol uniformly.  Unprotect so we can modify them during
   (re)loading, and protect when closing.  *)
 
-    eureqaSymbols = {ConnectTo, 
+  Unprotect[SearchOptions];
+    SearchOptions = {SearchRelationship,
+                     BuildingBlocks,
+                     FitnessMetric,
+                     NormalizeFitnessBy,
+                     SolutionPopulationSize,
+                     PredictorPopulationSize,
+                     TrainerPopulationSize,
+                     SolutionCrossoverProbability,
+                     SolutionMutationProbability,
+                     PredictorCrossoverProbability,
+                     PredictorMutationProbability};
+
+    eureqaSymbols = Join[SearchOptions,
+                {
+                (* Tags or objects *)
+                 SolutionFrontier, 
+                 (* Tags for SolutionInfo *)
+                 SolutionInfo, 
+                  FormulaText, 
+                  Fitness, 
+                  Score, 
+                  SearchOptions,
+                  Complexity, 
+                  Age, 
+                  Expression,
+                 (* Tags for SearchProgress *)
+                 SearchProgress, 
+                  Solution, 
+                  Generations, 
+                  GenerationsPerSec, 
+                  Evaluations, 
+                  EvaluationsPerSec, 
+                  TotalPopulationSize, 
+                (* Functions *)
+                 ConnectTo, 
                  Disconnect, 
                  SendDataSet, 
-                 SendOptions, 
                  StartSearch, 
                  PauseSearch, 
                  EndSearch, 
                  QueryProgress, 
                  QueryFrontier, 
-                 Solution, 
-                 SolutionFrontier, 
-                 FormulaText, 
-                 Fitness, 
-                 Score, 
-                 Complexity, 
-                 Age, 
-                 Generations, 
-                 GenerationsPerSec, 
-                 Evaluations, 
-                 EvaluationsPerSec, 
-                 TotalPopulationSize, 
                  FormulaTextToExpression, 
                  ClearSolutionFrontier, 
                  AddToSolutionFrontier,                  
                  AddToSolutionFrontierHelper, 
                  SolutionFrontierGrid,
                  GetSolutionFrontier, 
-                 SearchProgress, 
                  SearchProgressGrid, 
-                 SearchOptions,
                  IsConnected,
+                 (* Values *)
                  DefaultBuildingBlocks,
-                 (* Arguments to SearchOptions *)
-                 SearchRelationship,
-                 BuildingBlocks,
-                 FitnessMetric,
-                 NormalizeFitnessBy,
-                 SolutionPopulationSize,
-                 PredictorPopulationSize,
-                 TrainerPopulationSize,
-                 SolutionCrossoverProbability,
-                 SolutionMutationProbability,
-                 PredictorCrossoverProbability,
-                 PredictorMutationProbability,
-                 (* Fitness Types *)
-                 AbsoluteError,
-                 SquaredError,
-                 RootSquaredError,
-                 LogarithmicError,
-                 ExplogError,
-                 Correlation,
-                 MinimizeDifference,
-                 AkaikeInformation,
-                 BayesianInformation,
-                 MaximumError,
-                 MedianError,
-                 ImplicitError,
-                 SlopeError,
-                 Count,
+                 (* Arguments to SendOptions *)
+                 SendOptions, 
+                 (* Fitness Metrics *)
+                  AbsoluteError,
+                  SquaredError,
+                  RootSquaredError,
+                  LogarithmicError,
+                  ExplogError,
+                  Correlation,
+                  MinimizeDifference,
+                  AkaikeInformation,
+                  BayesianInformation,
+                  MaximumError,
+                  MedianError,
+                  ImplicitError,
+                  SlopeError,
+                  Count,
+                 EureqaSearch,
                  (* Arguments to EureqaSearch *)
-                 Host,
-                 VariableLabels,
-                 MaxGenerations,
-                 TerminateCondition
-                 }
+                  Host,
+                  VariableLabels,
+                  MaxGenerations,
+                  TerminateCondition,
+                  UpdatesPerSecond
+                 }];
 
     Apply[Unprotect, eureqaSymbols];
 
@@ -116,10 +129,8 @@ BeginPackage["EureqaClient`"];
     SendOptions::invopt1 = "Invalid option symbol given '``'.";
     SendOptions::failsym = "Failed to retrieve symbol.";
     SendOptions::failsym1 = "Failed to retrieve symbol for option '``'.";
-    SendOptions::expso = "Expected a SearchOptions object.";
-    SendOptions::expso1 = "Expected a SearchOptions object with '``'.";
-    SendOptions::exprule = "Expected a SearchOptions with Rule funtions, e.g. SearchOptions[SearchRelationship -> \"D(x,t) = f(x,y,z,t)\".";
-    SendOptions::exprule2 = "Expected each Rule to have two arguments.  Note: a -> b == Rule[a,b].";
+    SendOptions::exprule = "Expected a options specified  with Rule funtions, e.g. SearchOptions[SearchRelationship -> \"D(x,t) = f(x,y,z,t)\".";
+    SendOptions::expruletwo = "Expected each Rule to have two arguments.  Note: a -> b == Rule[a,b].";
     SendOptions::exprsym = "Expected each Rule's first argument to be a symbol.";
     SendOptions::senderr = "Error sending options.";
 
@@ -133,6 +144,7 @@ BeginPackage["EureqaClient`"];
     (*AllBuildingBlocks = Where are these defined?*)
 
     Begin["EureqaClient`Private`"]; 
+    SendDataSet[data_, Automatic] := SendDataSet[data];
     reload::usage = "Reloads the mathlink executable.";
     AddToSolutionFrontierHelper::usage = "Blah";
     (*Set EureqaClient`Private`linkName = "XXX" so that you can run
@@ -200,7 +212,58 @@ BeginPackage["EureqaClient`"];
         Grid[Join[header, {Map[get[Apply[List, progress],#]&, fields]}], 
              ItemSize -> Scaled[1/Length[fields]], Alignment -> Left
                   (*TableSpacing -> {Automatic, 5}, TableHeadings -> header*)]]
+    Options[EureqaSearch] = { 
+      Host -> "localhost", VariableLabels -> Automatic, StepMonitor -> (Null &), 
+      TerminateCondition -> (False &), BuildingBlocks ->  DefaultBuildingBlocks, 
+      SolutionPopulationSize -> Automatic, FitnessMetric -> Automatic, 
+      NormalizeFitnessBy -> Automatic, SolutionPopulationSize -> Automatic, 
+      PredictorPopulationSize -> Automatic, TrainerPopulationSize -> Automatic, 
+      SolutionCrossoverProbability -> Automatic, SolutionMutationProbability -> Automatic, 
+      PredictorCrossoverProbability -> Automatic, PredictorMutationProbability -> Automatic, 
+      MaxGenerations -> Infinity, UpdatesPerSecond -> 1};
 
+    EureqaSearch[data_?MatrixQ, searchRelationship_String, 
+      opts : OptionsPattern[]] := 
+     Module[{host = OptionValue[Host], result = "", status = "", progress = {}, 
+       generations, progressGrid = "", 
+       maxGenerations = OptionValue[MaxGenerations]},
+      CellGroup[{
+        CellPrint[
+         TextCell["Abort Evaluation to stop search.", "Output"]],
+        CellPrint[ExpressionCell[Framed[Dynamic[result]], "Output"]],
+        CellPrint[ExpressionCell[Framed[Dynamic[progressGrid]], "Output"]],
+        CellPrint[TextCell[Dynamic[status], "Output"]]
+        }];
+      status = "Connecting to '" <> host <> "'...";
+      Check[ConnectTo[host], Return[]];
+      status = "Sending data set...";
+      Check[SendDataSet[data, OptionValue[VariableLabels]], Return[]];
+      status = "Sending options...";
+      Check[SendOptions[SearchRelationship -> searchRelationship, 
+        Apply[Sequence, FilterRules[{opts}, SearchOptions]]], Return[]];
+      status = "Starting search...";
+      Check[StartSearch[], Return[]];
+      status = "Searching...";
+      ClearSolutionFrontier[];
+      CheckAbort[While[IsConnected[],
+        If[OptionValue[TerminateCondition][], 
+         status = "Search stopped by terminate condition.";
+         Break[]];
+        OptionValue[StepMonitor][];
+        progressGrid = SearchProgressGrid[progress = QueryProgress[]];
+        If[(generations = Generations /. List @@ progress) > 
+          maxGenerations, 
+         status = 
+          "Stopped search: generation " <> ToString[generations] <> 
+           " is greater than the max generation " <> 
+           ToString[maxGenerations] <> " specified."; Break[]];
+        result = 
+         SolutionFrontierGrid[AddToSolutionFrontier[QueryProgress[]]];
+        Pause[1/OptionValue[UpdatesPerSecond]];
+        ], 
+       status = "Search stopped."];
+      EndSearch[];
+      Disconnect[]];
 
     End[];
 
