@@ -1,3 +1,10 @@
+(* init.m
+
+  This contains the Mathematica code for the Eureqa Client.
+
+  Written by Shane Celis
+
+*)
 BeginPackage["EureqaClient`"];
 
 (* Let's handle our symbol uniformly.  Unprotect so we can modify them during
@@ -13,6 +20,7 @@ BeginPackage["EureqaClient`"];
                  QueryProgress, 
                  QueryFrontier, 
                  Solution, 
+                 SolutionFrontier, 
                  FormulaText, 
                  Fitness, 
                  Score, 
@@ -27,8 +35,10 @@ BeginPackage["EureqaClient`"];
                  ClearSolutionFrontier, 
                  AddToSolutionFrontier,                  
                  AddToSolutionFrontierHelper, 
+                 SolutionFrontierGrid,
                  GetSolutionFrontier, 
                  SearchProgress, 
+                 SearchProgressGrid, 
                  IsConnected}
 
     Apply[Unprotect, eureqaSymbols];
@@ -56,9 +66,17 @@ BeginPackage["EureqaClient`"];
     SolutionInfo::badform = "Invalid form of SolutionInfo '``'.";
 
     Begin["EureqaClient`Private`"]; 
+    reload::usage = "Reloads the mathlink executable.";
     AddToSolutionFrontierHelper::usage = "Blah";
-
-    mathlink = Install[$UserBaseDirectory <> "/Applications/EureqaClient/eureqa"];
+    load[] := Module[{}, mathlink = Install[$UserBaseDirectory <> "/Applications/EureqaClient/eureqa"]];
+    unload[] := Uninstall[mathlink];
+    reload[] := Module[{}, unload[]; load[]];
+    If[Length[Names["EureqaClient`Private`mathlink"]] == 0,
+      (* We've never seen the mathlink symbol before, so load it fresh. *)
+      load[],
+      (* We've seen the mathlink symbol before, so unload the last one
+      before loading the new one. *)
+      unload[]; load[]];
     (*mathlink = Install["57", LinkMode -> Connect];*)
     FormulaTextToExpression[""] := Null;
     FormulaTextToExpression[s_String] := Module[{rhs}, 
@@ -74,6 +92,7 @@ BeginPackage["EureqaClient`"];
                        If[result === field, 
                                Message[get::nofield, field, s]; 
                        $Failed, result]];
+    getAll[s_, fields__] := Map[get[s, #]&, List[fields]];
     GetSolutionInfoHelper[sol_SolutionInfo] := Module[{list}, 
            list = Sort[List @@ sol]; 
            Check[ Map[get[list, #] &, {FormulaText, Score, Fitness, 
@@ -87,9 +106,29 @@ BeginPackage["EureqaClient`"];
     AddToSolutionFrontier[prog_SearchProgress] := 
         AddToSolutionFrontier[Solution /. (List @@ prog)];
 
+    SolutionFrontierGrid[front_SolutionFrontier] := Module[{fields, gridItems, 
+                                                            infos, header},
+        fields = { Complexity, Fitness, Expression, FormulaText};
+        header = {Map[Style[SymbolName[#], Bold]&, fields]};
+        If[Length[front] > 0,
+            infos = front[[1]] /. SolutionInfo -> List;
+            gridItems = Join[header, Map[getAll[#, Apply[Sequence, fields]]&, infos]],
+            gridItems = {{}}];
+        Grid[gridItems, 
+             ItemSize -> Scaled[1/Length[header[[1]]]], Alignment -> Left
+                  (*TableSpacing -> {Automatic, 5}, TableHeadings -> header*)]]
+
+    SearchProgressGrid[progress_SearchProgress] := Module[{fields, header},
+        fields = { Generations, GenerationsPerSec, Evaluations, 
+                   EvaluationsPerSec, TotalPopulationSize};
+        header = {Map[Style[SymbolName[#], Bold]&, fields]};
+        Grid[Join[header, {Map[get[Apply[List, progress],#]&, fields]}], 
+             ItemSize -> Scaled[1/Length[fields]], Alignment -> Left
+                  (*TableSpacing -> {Automatic, 5}, TableHeadings -> header*)]]
+
 
     End[];
 
-(*    Apply[Protect, eureqaSymbols];*)
+    Apply[Protect, eureqaSymbols];
     Remove[eureqaSymbols];
     EndPackage[];

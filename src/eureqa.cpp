@@ -140,11 +140,7 @@ void _send_data_set_maybe_labels(bool labels) {
             
             MLReleaseSymbol(stdlink, lhead);
             MLDisownRealArray(stdlink, data, dims, heads, d);
-
-            MLEvaluate(stdlink, (char *) "Message[SendDataSet::colmis]"); 
-            MLNextPacket(stdlink); 
-            MLNewPacket(stdlink); 
-            MLPutSymbol(stdlink, (char *) "$Failed");
+            FAILED_WITH_MESSAGE("SendDataSet::colmis");
             return;
         }
         for (int i = 0; i < n; i++) {
@@ -281,7 +277,7 @@ void get_solution_info(eureqa::solution_info& solution)
     if (! MLCheckFunction(stdlink, (char *) "SolutionInfo", &n)) {    
         std::cerr << " not a solution info input\n";
     }
-
+    // NYI 
 
 }
 
