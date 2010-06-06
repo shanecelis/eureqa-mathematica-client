@@ -143,10 +143,10 @@
 :End:
 
 
-// void _add_to_solution_frontier_helper2 P(());
+// void _add_to_solution_frontier_helper P(());
 
 :Begin:
-:Function:       _add_to_solution_frontier_helper2
+:Function:       _add_to_solution_frontier_helper
 :Pattern:        AddToSolutionFrontierHelper[text_String, score_Real, fitness_Real, complexity_Real, age_Integer]
 :Arguments:      {text, score, fitness, complexity, age}
 :ArgumentTypes:  {String, Real64, Real64, Real64, Integer }

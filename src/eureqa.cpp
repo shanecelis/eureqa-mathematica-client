@@ -42,8 +42,7 @@ void _end_search();
 void _query_progress();
 void _query_frontier();
 void _get_solution_frontier();
-void _add_to_solution_frontier_helper();
-void _add_to_solution_frontier_helper2(const char* text, double score, 
+void _add_to_solution_frontier_helper(const char* text, double score, 
                                        double fitness, double complexity,
                                        int    age);
 void _clear_solution_frontier();
@@ -363,7 +362,7 @@ void _send_options_explicit()
     //std::cerr << options.summary() << std::endl;
     long n;
     if (! MLCheckFunction(stdlink, (char *) "SearchOptions", &n)) {
-        FAILED_WITH_MESSAGE("SendOptions::invarg");
+        FAILED_WITH_MESSAGE("SendOptions::expso");
         return;
     } 
     printf("n = %ld\n", n);
@@ -371,41 +370,33 @@ void _send_options_explicit()
         long m;
         const char *head;
         if (! MLCheckFunction(stdlink, "Rule", &m)) {
-            FAILED_WITH_MESSAGE("SendOptions::invarg2");
+            FAILED_WITH_MESSAGE("SendOptions::exprule");
             return;
         } 
-        printf("m = %ld\n", m);
-
-        // if (! MLCheckFunction(stdlink, (char *) "Rule", &m)) {
-        //     FAILED_WITH_MESSAGE("SendOptions::invarg2");
-        //     return;
-        // } 
         if (m != 2) {
-            FAILED_WITH_MESSAGE("SendOptions::invarg3");
+            FAILED_WITH_MESSAGE("SendOptions::exprule2");
             return;
         }
 
         int o;
         const char *sym;
         if (! MLGetSymbol(stdlink, &sym)) {
-            FAILED_WITH_MESSAGE("SendOptions::invarg4");
+            FAILED_WITH_MESSAGE("SendOptions::exprsym");
             return;
         } 
-        printf("Got options for '%s'\n", sym);
+        //printf("Got options for '%s'\n", sym);
         int err = update_option(sym);
-        printf("err =  '%d'\n", err);
-        // const char *formula;
-        // if (! MLGetString(stdlink, &formula)) {
-        //     FAILED_WITH_MESSAGE("SendOptions::invarg5");
-        //     return;
-        // }
-        // options.search_relationship_ = formula;
+        //printf("err =  '%d'\n", err);
+    }
+    if (! options.is_valid()) {
+        FAILED_WITH_MESSAGE("SendOptions::inv");
+        return;
     }
     
     if (conn.send_options(options)) {
         MLPutSymbol(stdlink, (char *) "Null");        
     } else {
-        FAILED_WITH_MESSAGE("SendOptions::err");
+        FAILED_WITH_MESSAGE("SendOptions::senderr");
     }
 }
 
@@ -565,75 +556,7 @@ void _get_solution_frontier() {
     put_solution_frontier(front);
 }
 
-
-void _add_to_solution_frontier_helper() {
-
-    printf("BEGIN add_to_solution_frontier_helper\n");
-    long n;
-    eureqa::solution_info sol;
-    printf("1 add_to_solution_frontier_helper\n");
-
-    if (! MLCheckFunction(stdlink, (char *) "List", &n)) {
-        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::err");
-        return;
-    } 
-    printf("2 add_to_solution_frontier_helper\n");
-    if (n != 5) {
-        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::invlen");
-        return;
-    }
-    // I'm going to pull the members the same way they're place onto the list
-    // by GetSolutionInfoHelper:
-    // Map[get[list, #] &, {FormulaText, Score, Fitness, Complexity, Age}],
-    const char* text;
-    double score;
-    double fitness;
-    double complexity;
-    int    age;
-
-    printf("3 add_to_solution_frontier_helper\n");
-    if (! MLGetString(stdlink, &text)) {
-        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
-        return;
-    } 
-
-    printf("4 add_to_solution_frontier_helper\n");
-    if (! MLGetDouble(stdlink, &score)) {
-        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
-        return;
-    } 
-
-    printf("5 add_to_solution_frontier_helper\n");
-    if (! MLGetDouble(stdlink, &fitness)) {
-        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
-        return;
-    } 
-
-    printf("6 add_to_solution_frontier_helper\n");
-    if (! MLGetDouble(stdlink, &complexity)) {
-        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
-        return;
-    } 
-
-    printf("7 add_to_solution_frontier_helper\n");
-    if (! MLGetInteger(stdlink, &age)) {
-        FAILED_WITH_MESSAGE("AddToSolutionFrontierHelper::geterr");
-        return;
-    } 
-
-    printf("8 add_to_solution_frontier_helper\n");
-    // XXX I might leak this string if anything fails above.
-    sol.text_ = text;
-    MLReleaseString(stdlink, text);
-    sol.score_ = score;
-    sol.fitness_ = fitness;
-    sol.complexity_ = complexity;
-    sol.age_ = age;
-    front.add(sol);
-    put_solution_frontier(front);
-}
-
-void _add_to_solution_frontier_helper2(const char* text, double score, 
+void _add_to_solution_frontier_helper(const char* text, double score, 
                                        double fitness, double complexity,
                                        int    age)
 {
