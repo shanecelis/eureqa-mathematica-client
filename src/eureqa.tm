@@ -61,13 +61,13 @@
 :ReturnType:     Manual
 :End:
 
-// void _send_options P((void));
+// void _send_options_explicit P((int));
 
 :Begin:
 :Function:       _send_options_explicit
-:Pattern:        SendOptions[_SearchOptions]
-:Arguments:      {options}
-:ArgumentTypes:  {Manual}
+:Pattern:        SendOptions[options__Rule]
+:Arguments:      {Length[List[options]], options}
+:ArgumentTypes:  {Integer, Manual}
 :ReturnType:     Manual
 :End:
 

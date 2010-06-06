@@ -117,6 +117,7 @@ BeginPackage["EureqaClient`"];
     SendOptions::failsym = "Failed to retrieve symbol.";
     SendOptions::failsym1 = "Failed to retrieve symbol for option '``'.";
     SendOptions::expso = "Expected a SearchOptions object.";
+    SendOptions::expso1 = "Expected a SearchOptions object with '``'.";
     SendOptions::exprule = "Expected a SearchOptions with Rule funtions, e.g. SearchOptions[SearchRelationship -> \"D(x,t) = f(x,y,z,t)\".";
     SendOptions::exprule2 = "Expected each Rule to have two arguments.  Note: a -> b == Rule[a,b].";
     SendOptions::exprsym = "Expected each Rule's first argument to be a symbol.";

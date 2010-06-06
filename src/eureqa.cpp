@@ -27,7 +27,7 @@ void _send_data_set_maybe_labels(bool labels);
 void _send_data_set();
 void _send_data_set_labels();
 void _send_options(char const* model);
-void _send_options_explicit();
+void _send_options_explicit(int);
 void _start_search();
 void _pause_search();
 void _end_search();
@@ -226,9 +226,11 @@ class MetricGetSet : public GetSet {
         }
         if (enum_values.find(symbol) == enum_values.end()) {
             failed_with_message1("SendOptions::invsym1", sym);
+            MLReleaseSymbol(stdlink, symbol);
             return 3;
         }
         data = enum_values[symbol];
+        MLReleaseSymbol(stdlink, symbol);
         return 0;
     }
 };
@@ -428,7 +430,7 @@ void _send_options(char const* model)
     }
 }
 
-void _send_options_explicit()
+void _send_options_explicit(int n)
 {
     if (ensure_connected("SendOptions")) return;
     
@@ -437,11 +439,29 @@ void _send_options_explicit()
     options.set_default_options();
     options.set_default_building_blocks();
     //std::cerr << options.summary() << std::endl;
-    long n;
-    if (! MLCheckFunction(stdlink, (char *) "SearchOptions", &n)) {
-        FAILED_WITH_MESSAGE("SendOptions::expso");
-        return;
-    } 
+    // long n;
+    // if (! MLCheckFunction(stdlink, (char *) "SearchOptions", &n)) {
+    //     FAILED_WITH_MESSAGE("SendOptions::expso");
+    //     return;
+    // } 
+
+    // int n;
+    // const char *head;
+    // if (! MLGetFunction(stdlink, &head, &n)) {
+    //     failed_with_message1("SendOptions::expsox", head);
+    // }
+    //     failed_with_message1("SendOptions::expsoy", head);
+    //long n;
+    // if (! MLCheckFunction(stdlink, (char *) "SendOptions", &n)) {
+    //     FAILED_WITH_MESSAGE("SendOptions::expso");
+    //     return;
+    // } 
+
+    //failed_with_message1("SendOptions::expso1", resolve_mltkenum(MLGetType(stdlink)));
+    // if (! MLGetArgCount(stdlink, &n)) {
+    //     failed_with_message1("SendOptions::expso1", resolve_mltkenum(MLGetType(stdlink)));
+    //     return;
+    // }
     for (int i = 0; i < n; i++) {
         long m;
         const char *head;
@@ -460,9 +480,8 @@ void _send_options_explicit()
             FAILED_WITH_MESSAGE("SendOptions::exprsym");
             return;
         } 
-        //printf("Got options for '%s'\n", sym);
         int err = update_option(sym);
-        //printf("err =  '%d'\n", err);
+        MLReleaseSymbol(stdlink, sym);
     }
     if (! options.is_valid()) {
         FAILED_WITH_MESSAGE("SendOptions::inv");
