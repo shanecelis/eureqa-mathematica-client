@@ -146,24 +146,25 @@ BeginPackage["EureqaClient`"];
     Begin["EureqaClient`Private`"]; 
     SendDataSet[data_, Automatic] := SendDataSet[data];
     reload::usage = "Reloads the mathlink executable.";
-    AddToSolutionFrontierHelper::usage = "Blah";
     (*Set EureqaClient`Private`linkName = "XXX" so that you can run
     the mathlink executable in a debugger or see its output.  It will
     ask for a name at startup, give it your choice for "XXX".  *)
-
-    load[] := Module[{}, 
-      If[linkName === None, 
-          mathlink = Install[$UserBaseDirectory <> "/Applications/EureqaClient/eureqa"], 
-          mathlink = Install[linkName, LinkMode -> Connect]]]; 
+    If[Length[Names["EureqaClient`Private`linkName"]] === 0,  
+        EureqaClient`Private`linkName = None];
+    load[] := (*If[Length[Names["EureqaClient`Private`linkName"]] === 0 || linkName === None, *)
+                  (* Never seen the linkName symbol, load the default link. *)
+                  mathlink = Install[$UserBaseDirectory <> "/Applications/EureqaClient/eureqaml"](*, 
+                  mathlink = Install[linkName, LinkMode -> Connect]]; *)
     unload[] := Uninstall[mathlink]; 
     reload[] := Module[{}, unload[]; load[]];
-
-    If[Length[Names["EureqaClient`Private`mathlink"]] == 0,
+    If[Length[Names["EureqaClient`Private`mathlink"]] === 0,
       (* We've never seen the mathlink symbol before, so load it fresh. *)
       load[],
       (* We've seen the mathlink symbol before, so unload the last one
       before loading the new one. *)
       unload[]; load[]];
+
+
     FormulaTextToExpression[""] := Null;
     FormulaTextToExpression[s_String] := Module[{rhs}, 
               If[StringCount[s, "="] == 1, 
