@@ -15,14 +15,6 @@
 #include <boost/unordered_map.hpp>
 #include <cstring>
 
-#define FAILED_WITH_MESSAGE(msg) \
-        MLClearError(stdlink); \
-        MLNewPacket(stdlink); \
-        MLEvaluate(stdlink, (char *) "Message[" msg "]"); \
-        MLNextPacket(stdlink); \
-        MLNewPacket(stdlink); \
-        MLPutSymbol(stdlink, (char *) "$Failed")
-
 extern "C" {
 #include "mathlink.h"
 }
@@ -46,6 +38,53 @@ void _add_to_solution_frontier_helper(const char* text, double score,
                                        double fitness, double complexity,
                                        int    age);
 void _clear_solution_frontier();
+}
+
+const char * resolve_mltkenum(int mltk);
+
+#define FAILED_WITH_MESSAGE(msg) \
+        MLClearError(stdlink); \
+        MLNewPacket(stdlink); \
+        MLEvaluate(stdlink, (char *) "Message[" msg "]"); \
+        MLNextPacket(stdlink); \
+        MLNewPacket(stdlink); \
+        MLPutSymbol(stdlink, (char *) "$Failed")
+
+void failed_with_message0(char *msg) {
+    char buf[255];
+    MLClearError(stdlink); 
+    MLNewPacket(stdlink); 
+    snprintf(buf, 255, "Message[%s]", msg);
+    MLEvaluate(stdlink, (char *) buf);
+    MLNextPacket(stdlink); 
+    MLNewPacket(stdlink); 
+    MLPutSymbol(stdlink, (char *) "$Failed");
+}
+
+/* I should just make a variable argument accepting function, a la
+   printf, but I'm being lazy. */ 
+void failed_with_message1(const char *msg, const char *arg) {
+    char buf[255];
+    MLClearError(stdlink); 
+    MLNewPacket(stdlink); 
+    snprintf(buf, 255, "Message[%s, %s]", msg, arg);
+    MLEvaluate(stdlink, (char *) buf);
+    MLNextPacket(stdlink); 
+    MLNewPacket(stdlink); 
+    MLPutSymbol(stdlink, (char *) "$Failed");
+}
+
+/* I should just make a variable argument accepting function, a la
+   printf, but I'm being lazy. */ 
+void failed_with_message2(const char *msg, const char *arg1, const char *arg2) {
+    char buf[255];
+    MLClearError(stdlink); 
+    MLNewPacket(stdlink); 
+    snprintf(buf, 255, "Message[%s, %s, %s]", msg, arg1, arg2);
+    MLEvaluate(stdlink, (char *) buf);
+    MLNextPacket(stdlink); 
+    MLNewPacket(stdlink); 
+    MLPutSymbol(stdlink, (char *) "$Failed");
 }
 
 eureqa::connection conn;
@@ -72,8 +111,9 @@ class StringGetSet : public GetSet {
     StringGetSet(std::string& astr) : data(astr) { }
     virtual int update_data(const char* sym) {
         const char *str;
-        if (MLGetNext(stdlink) != MLTKSTR) {
-            FAILED_WITH_MESSAGE("SendOptions::expstr");
+        int mltk = MLGetNext(stdlink);
+        if (mltk != MLTKSTR) {
+            failed_with_message2("SendOptions::expstr2", sym, resolve_mltkenum(mltk));
             return 1;
         }
         if (! MLGetString(stdlink, &str)) {
@@ -94,7 +134,7 @@ class IntegerGetSet : public GetSet {
     virtual int update_data(const char* sym) {
         int i;
         if (MLGetNext(stdlink) != MLTKINT) {
-            FAILED_WITH_MESSAGE("SendOptions::expint");
+            failed_with_message1("SendOptions::expint1", sym);
             return 1;
         }
         if (! MLGetInteger(stdlink, &i)) {
@@ -113,7 +153,7 @@ class RealGetSet : public GetSet {
     virtual int update_data(const char* sym) {
         float f;
         if (MLGetNext(stdlink) != MLTKREAL && MLGetNext(stdlink) != MLTKINT) {
-            FAILED_WITH_MESSAGE("SendOptions::expreal");
+            failed_with_message1("SendOptions::expreal", sym);
             return 1;
         }
 
@@ -134,14 +174,14 @@ class StringListGetSet : public GetSet {
         long n;
         data.clear();
         if (! MLCheckFunction(stdlink, (char *) "List", &n)) {
-            FAILED_WITH_MESSAGE("SendOptions::explist");
+            failed_with_message1("SendOptions::explist", sym);
             return 1;
         } 
         for (int i = 0; i < n; i++) {
             long m;
             const char *str;
             if (MLGetNext(stdlink) != MLTKSTR) {
-                FAILED_WITH_MESSAGE("SendOptions::expstr");
+                failed_with_message1("SendOptions::expstr", sym);
                 return 2;
             }
             if (! MLGetString(stdlink, &str)) {
@@ -176,24 +216,41 @@ class MetricGetSet : public GetSet {
     }
     virtual int update_data(const char* sym) {
         const char *symbol;
-        if (! MLGetSymbol(stdlink, &symbol)) {
-            FAILED_WITH_MESSAGE("SendOptions::failsym");
+        if (MLGetNext(stdlink) != MLTKSYM) {
+            failed_with_message1("SendOptions::expsym1", sym);
             return 1;
         }
-        if (enum_values.find(symbol) == enum_values.end()) {
-            FAILED_WITH_MESSAGE("SendOptions::expsym");
+        if (! MLGetSymbol(stdlink, &symbol)) {
+            failed_with_message1("SendOptions::failsym1", sym);
             return 2;
+        }
+        if (enum_values.find(symbol) == enum_values.end()) {
+            failed_with_message1("SendOptions::invsym1", sym);
+            return 3;
         }
         data = enum_values[symbol];
         return 0;
     }
 };
 
+const char * resolve_mltkenum(int mltk) {
+    switch (mltk) {
+    case MLTKERR: return "MLTKERR";
+    case MLTKINT: return "MLTKINT";
+    case MLTKFUNC: return "MLTKFUNC";
+    case MLTKREAL: return "MLTKREAL";
+    case MLTKSTR: return "MLTKSTR";
+    case MLTKSYM: return "MLTKSYM";
+    default: return "NOMATCH";
+    }
+}
+
 
 int initialize_option_properties()
 {
-    if (option_properties.size() != 0)
+    if (option_properties.size() != 0) {
         return 0;
+    }
     option_properties["SearchRelationship"] = new StringGetSet(options.search_relationship_);
     option_properties["BuildingBlocks"] = new StringListGetSet(options.building_blocks_);
     option_properties["NormalizeFitnessBy"] = new RealGetSet(options.normalize_fitness_by_);
@@ -210,8 +267,29 @@ int initialize_option_properties()
 int update_option(const char* sym) {
     if (option_properties.find(sym) == option_properties.end()) {
         // No such property
+        failed_with_message1("SendOptions::invopt1", sym);
         return 1;
     }
+    // We'll deal with Automatic values by just not doing anything.
+    MLMARK mark;
+    mark = MLCreateMark(stdlink);
+    if (MLGetNext(stdlink) == MLTKSYM) {
+        const char* symbol;
+        if (! MLGetSymbol(stdlink, &symbol)) {
+            failed_with_message1("SendOptions::failmsym1", sym);
+            return 2;
+        }
+        if (strcmp(symbol, "Automatic") == 0) {
+            // Good, we don't change anything.
+            MLReleaseSymbol(stdlink, symbol);
+            MLDestroyMark(stdlink, mark);
+            return 0;
+        }
+        MLReleaseSymbol(stdlink, symbol);
+    } 
+    MLSeekToMark(stdlink, mark, 0);
+    MLDestroyMark(stdlink, mark);
+    
     return option_properties[sym]->update_data(sym);
 }
 
@@ -317,7 +395,7 @@ void _send_data_set_maybe_labels(bool labels) {
         MLReleaseSymbol(stdlink, lhead);
     }
 
-    std::cerr << dataset.summary() << std::endl;
+    //std::cerr << dataset.summary() << std::endl;
     if (conn.send_data_set(dataset)) {
         // Everything went well.  Send through the data we received.
         MLPutDoubleArray(stdlink, data, dims, heads, d);
@@ -342,7 +420,7 @@ void _send_options(char const* model)
 {
     if (ensure_connected("SendOptions")) return;
     eureqa::search_options options(model); // holds the search options
-    std::cerr << options.summary() << std::endl;
+    //std::cerr << options.summary() << std::endl;
     if (conn.send_options(options)) {
         MLPutSymbol(stdlink, (char *) "Null");        
     } else {
@@ -352,7 +430,6 @@ void _send_options(char const* model)
 
 void _send_options_explicit()
 {
-    printf("BEGIN _send_options_explicit\n");
     if (ensure_connected("SendOptions")) return;
     
     //if (...)
@@ -365,7 +442,6 @@ void _send_options_explicit()
         FAILED_WITH_MESSAGE("SendOptions::expso");
         return;
     } 
-    printf("n = %ld\n", n);
     for (int i = 0; i < n; i++) {
         long m;
         const char *head;

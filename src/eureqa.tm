@@ -65,7 +65,7 @@
 
 :Begin:
 :Function:       _send_options_explicit
-:Pattern:        SendOptions[options_SearchOptions]
+:Pattern:        SendOptions[_SearchOptions]
 :Arguments:      {options}
 :ArgumentTypes:  {Manual}
 :ReturnType:     Manual

@@ -45,7 +45,7 @@ BeginPackage["EureqaClient`"];
                  (* Arguments to SearchOptions *)
                  SearchRelationship,
                  BuildingBlocks,
-                 FitnessType,
+                 FitnessMetric,
                  NormalizeFitnessBy,
                  SolutionPopulationSize,
                  PredictorPopulationSize,
@@ -68,7 +68,12 @@ BeginPackage["EureqaClient`"];
                  MedianError,
                  ImplicitError,
                  SlopeError,
-                 Count
+                 Count,
+                 (* Arguments to EureqaSearch *)
+                 Host,
+                 VariableLabels,
+                 MaxGenerations,
+                 TerminateCondition
                  }
 
     Apply[Unprotect, eureqaSymbols];
@@ -91,18 +96,30 @@ BeginPackage["EureqaClient`"];
     QueryFrontier::err = "Error querying frontier.";
     SendOptions::inv = "Invalid SearchOptions provided.";
     SendOptions::expstr = "Expected a string.";
+    SendOptions::expstr1 = "Expected a string for option '``'.";
+    SendOptions::expstr2 = "Expected a string for option '``' instead got '``'.";
     SendOptions::failstr = "Failed to retrieve string.";
     SendOptions::expint = "Expected an integer.";
+    SendOptions::expint1 = "Expected an integer for option '``'.";
     SendOptions::failint = "Failed to retrieve integer.";
     SendOptions::expreal = "Expected a real number.";
+    SendOptions::expreal1 = "Expected a real number for option '``'.";
     SendOptions::failreal = "Failed to retrieve real number.";
+    SendOptions::failmsym1 = "Failed to see if there was an 'Automatic' symbol for option '``'.";
     SendOptions::explist = "Expected a list.";
+    SendOptions::explist1 = "Expected a list for option '``'.";
     SendOptions::expsym = "Expected a symbol.";
+    SendOptions::expsym1 = "Expected a symbol for option '``'.";
+    SendOptions::invsym = "Invalid symbol given.";
+    SendOptions::invsym1 = "Invalid symbol given for option '``'.";
+    SendOptions::invopt = "Invalid option symbol given.";
+    SendOptions::invopt1 = "Invalid option symbol given '``'.";
     SendOptions::failsym = "Failed to retrieve symbol.";
+    SendOptions::failsym1 = "Failed to retrieve symbol for option '``'.";
     SendOptions::expso = "Expected a SearchOptions object.";
     SendOptions::exprule = "Expected a SearchOptions with Rule funtions, e.g. SearchOptions[SearchRelationship -> \"D(x,t) = f(x,y,z,t)\".";
-    SendOptions::exprule = "Expected each Rule to have two arguments.";
-    SendOptions::exprsym = "Expected each Rule's argument to be a symbol.";
+    SendOptions::exprule2 = "Expected each Rule to have two arguments.  Note: a -> b == Rule[a,b].";
+    SendOptions::exprsym = "Expected each Rule's first argument to be a symbol.";
     SendOptions::senderr = "Error sending options.";
 
     FormulaTextToExpression::usage = "Converts a string of the form 'f(x,y,z) = x*sin(y) + z' into an expression: x Sin[y] + z";
@@ -120,11 +137,14 @@ BeginPackage["EureqaClient`"];
     (*Set EureqaClient`Private`linkName = "XXX" so that you can run
     the mathlink executable in a debugger or see its output.  It will
     ask for a name at startup, give it your choice for "XXX".  *)
-    load[] := Module[{}, If[linkName === None, mathlink =
-    Install[$UserBaseDirectory <>
-    "/Applications/EureqaClient/eureqa"], mathlink = Install[linkName,
-    LinkMode -> Connect]] ]; unload[] := Uninstall[mathlink]; reload[]
-    := Module[{}, unload[]; load[]];
+
+    load[] := Module[{}, 
+      If[linkName === None, 
+          mathlink = Install[$UserBaseDirectory <> "/Applications/EureqaClient/eureqa"], 
+          mathlink = Install[linkName, LinkMode -> Connect]]]; 
+    unload[] := Uninstall[mathlink]; 
+    reload[] := Module[{}, unload[]; load[]];
+
     If[Length[Names["EureqaClient`Private`mathlink"]] == 0,
       (* We've never seen the mathlink symbol before, so load it fresh. *)
       load[],
@@ -161,12 +181,13 @@ BeginPackage["EureqaClient`"];
 
     SolutionFrontierGrid[front_SolutionFrontier] := Module[{fields, gridItems, 
                                                             infos, header},
-        fields = { Complexity, Fitness, Expression, FormulaText};
+        fields = { Complexity, Fitness, Expression, Score};
         header = {Map[Style[SymbolName[#], Bold]&, fields]};
         If[Length[front] > 0,
             infos = front[[1]] /. SolutionInfo -> List;
-            gridItems = Join[header, Map[getAll[#, Apply[Sequence, fields]]&, infos]],
-            gridItems = {{}}];
+            gridItems = Join[header, SortBy[Map[getAll[#, Apply[Sequence, fields]]&, infos], 
+                                            -Part[#,4]&]],
+            gridItems = {header}];
         Grid[gridItems, 
              ItemSize -> Scaled[1/Length[header[[1]]]], Alignment -> Left
                   (*TableSpacing -> {Automatic, 5}, TableHeadings -> header*)]]
