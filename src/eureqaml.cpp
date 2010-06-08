@@ -1,21 +1,27 @@
 /*
   eureqaml.cpp
   
-  This file contains the C portion of the code for the Eureqa client.
+  This file contains the C portion of the code for the Eureqa Client
+  for Mathematica.
 
   Written by Shane Celis.
+
+  Licensed under the GNU General Public License.
+
 */
   
-/* To launch this program from within Mathematica use:
- *   In[1]:= link = Install["eureqaml"]
- *
- * Or, launch this program from a shell and establish a
- * peer-to-peer connection.  When given the prompt Create Link:
- * type a port name. ( On Unix platforms, a port name is a
- * number less than 65536.  On Mac or Windows platforms,
- * it's an arbitrary word.)
- * Then, from within Mathematica use:
- *   In[1]:= link = Install["portname", LinkMode->Connect]
+/* 
+   To launch this program from within Mathematica use:
+
+    In[1]:= link = Install["eureqaml"]
+ 
+   Or, launch this program from a shell and establish a peer-to-peer
+   connection.  When given the prompt Create Link: type a port
+   name. (On Unix platforms, a port name is a number less than 65536.
+   On Mac or Windows platforms, it's an arbitrary word.)
+
+   Then, from within Mathematica use:
+     In[1]:= link = Install["portname", LinkMode->Connect]
  */
 
 #include <iostream>
@@ -86,8 +92,6 @@ void failed_with_message1(const char *msg, const char *arg) {
     MLPutSymbol(stdlink, (char *) "$Failed");
 }
 
-/* I should just make a variable argument accepting function, a la
-   printf, but I'm being lazy. */ 
 void failed_with_message2(const char *msg, const char *arg1, const char *arg2) {
     char buf[255];
     MLClearError(stdlink); 
@@ -125,7 +129,8 @@ class StringGetSet : public GetSet {
         const char *str;
         int mltk = MLGetNext(stdlink);
         if (mltk != MLTKSTR) {
-            failed_with_message2("SendOptions::expstr2", sym, resolve_mltkenum(mltk));
+            failed_with_message2("SendOptions::expstr2", sym, 
+                                 resolve_mltkenum(mltk));
             return 1;
         }
         if (! MLGetString(stdlink, &str)) {
@@ -258,7 +263,6 @@ const char * resolve_mltkenum(int mltk) {
     }
 }
 
-
 int initialize_option_properties()
 {
     if (option_properties.size() != 0) {
@@ -357,7 +361,7 @@ void _disconnect()
         return;
     }
 
-    // It would be nice if we respect request for an abort.
+    // It would be nice if we respect any requests to abort.
     conn.disconnect();
     MLPutSymbol(stdlink, (char *) "Null");
 }
@@ -367,14 +371,14 @@ void _send_data_set_maybe_labels(bool labels) {
     double *data;
     long *dims;                 // dimensions
     char **heads;
-    long d; /* stores the rank of the array */
+    long d; /* Stores the rank of the array. */
     long i,j;
 
     if(! MLGetRealArray(stdlink, &data, &dims, &heads, &d)) {
         FAILED_WITH_MESSAGE("SendDataSet::readerr");
         return;
     }
-    eureqa::data_set dataset(dims[0], dims[1]); // holds the data
+    eureqa::data_set dataset(dims[0], dims[1]); // Holds the data.
     for(i=0; i<dims[0]; i++) 
         for(j=0; j<dims[1]; j++)
             dataset(i,j) = data[j + i * dims[1]];
@@ -383,13 +387,11 @@ void _send_data_set_maybe_labels(bool labels) {
         const char *lhead;
         int n;
         if (! MLGetFunction(stdlink, &lhead, &n)) {
+            MLDisownRealArray(stdlink, data, dims, heads, d);
             FAILED_WITH_MESSAGE("SendDataSet::invarg");
             return;
         }
         if (n != dims[1]) {
-            // For some reason this block of code is not working correctly.
-            // The executable dies quietly when it goes through here.
-            
             MLReleaseSymbol(stdlink, lhead);
             MLDisownRealArray(stdlink, data, dims, heads, d);
             FAILED_WITH_MESSAGE("SendDataSet::colmis");
@@ -398,6 +400,9 @@ void _send_data_set_maybe_labels(bool labels) {
         for (int i = 0; i < n; i++) {
             const char *label;
             if (!MLGetString(stdlink, &label)) {
+                MLReleaseSymbol(stdlink, lhead);
+                MLDisownRealArray(stdlink, data, dims, heads, d);
+
                 FAILED_WITH_MESSAGE("SendDataSet::invarg");
                 return;
             }
@@ -408,7 +413,6 @@ void _send_data_set_maybe_labels(bool labels) {
         MLReleaseSymbol(stdlink, lhead);
     }
 
-    //std::cerr << dataset.summary() << std::endl;
     if (conn.send_data_set(dataset)) {
         // Everything went well.  Send through the data we received.
         MLPutDoubleArray(stdlink, data, dims, heads, d);
@@ -416,6 +420,7 @@ void _send_data_set_maybe_labels(bool labels) {
     } else {
         MLDisownRealArray(stdlink, data, dims, heads, d);
         FAILED_WITH_MESSAGE("SendDataSet::err");
+        return;
     }
 }
 

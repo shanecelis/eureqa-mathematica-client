@@ -56,6 +56,7 @@ Here is an example of how to perform a search within Mathematica.
     In[4]:= EureqaSearch[data, "x = f(t)", VariableLabels -> {"t", "x"}, 
             Host -> "10.211.55.3"]
 
+
 Limitations
 -----------
 
@@ -74,6 +75,14 @@ creating the documentation templates.
 
 I welcome help making the Windows build and installation work.  I
 think the trouble lies somewhere in the FindMathLink CMake module.
+
+License
+-------
+
+I am currently electing to be conservative and license this under the
+[GNU General Public License](http://www.gnu.org/licenses/gpl.html);
+however, I am open to considering other licenses, if anyone wants to
+suggest a better license for this project.
 
 Acknowledgments
 ---------------

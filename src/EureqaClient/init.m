@@ -1,9 +1,11 @@
 (* init.m
 
   This file contains the Mathematica portion of the code for the
-  Eureqa Client.
+  Eureqa Client for Mathematica.
 
   Written by Shane Celis.
+
+  Licensed under the GNU General Public License.
 
 *)
 BeginPackage["EureqaClient`"];
@@ -336,12 +338,15 @@ BeginPackage["EureqaClient`"];
       status = "Connecting to '" <> host <> "'...";
       Check[ConnectTo[host], Return[]];
       status = "Sending data set...";
-      Check[SendDataSet[data, OptionValue[VariableLabels]], Return[]];
+      Check[SendDataSet[data, OptionValue[VariableLabels]], 
+            Disconnect[]; Return[]];
       status = "Sending options...";
       Check[SendOptions[SearchRelationship -> searchRelationship, 
-        Apply[Sequence, FilterRules[{opts}, SendOptionsOptions]]], Return[]];
+                        Apply[Sequence, FilterRules[{opts}, SendOptionsOptions]]], 
+            Disconnect[]; Return[]];
       status = "Starting search...";
-      Check[StartSearch[], Return[]];
+      Check[StartSearch[], 
+            Disconnect[]; Return[]];
       status = "Searching...";
       ClearSolutionFrontier[];
       Check[CheckAbort[
