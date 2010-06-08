@@ -571,6 +571,7 @@ void put_solution_info(eureqa::solution_info solution)
           MLPutFunction(stdlink, (char *) "Rule", 2);
             MLPutSymbol(stdlink, (char *) "Complexity");
             MLPutDouble(stdlink, solution.complexity_);
+            // XXX Age doesn't appear to ever differ from zero. 
           MLPutFunction(stdlink, (char *) "Rule", 2);
             MLPutSymbol(stdlink, (char *) "Age");
             MLPutInteger(stdlink, solution.age_);

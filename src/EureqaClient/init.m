@@ -185,7 +185,7 @@ BeginPackage["EureqaClient`"];
     SolutionFrontierToMatrix::usage = "Converts a solution frontier from a set of solution info field objects into a matrix of values including the names of the fields.";
     TerminateCondition::usage = "Option used with EureqaSearch to specify a function f[progress, solutionFrontier] that returns True to terminate a search.";
     StepMonitor::usage = "Option used with EureqaSearch to specify a function that is run on every update interval.  It is not provided with any arguments, but it can query the running server with QueryProgress[] and GetSolutionFrontier[] functions.";
-    EureqaSearch::usage = "EureqaSearch[data, model] searches for the kind of relationship specified by the model in the data.  Some important options are Host, VariableLabels, BuildingBlocks.  See all the options this function accepts by evaluating Options[EureqaSearch].";
+    EureqaSearch::usage = "EureqaSearch[data, model] initiates a search of the given data for a relationship as specified by the model.  Some important options are Host, VariableLabels, BuildingBlocks.  See all the options this function accepts by evaluating Options[EureqaSearch].";
     FitnessMetric::usage = "Option used to specify how fitness should be evaluated.  Evaluate FitnessMetrics to see the values available.";
     Host::usage = "Option used to specify what host to connect to.";
     VariableLabels::usage = "Option used to specify the labels of each column of data.  If not specified the labels used by default are x1, x2, ....";
@@ -246,7 +246,7 @@ BeginPackage["EureqaClient`"];
            list = Sort[List @@ sol]; 
            Check[ Map[GetField[list, #] &, {FormulaText, Score, Fitness, 
                                        Complexity, Age}], 
-                                     Message[SolutionInfo::badform, sol]; 
+                  Message[SolutionInfo::badform, sol]; 
                   $Failed] ];
     AddToSolutionFrontier[sol_SolutionInfo] := 
         Check[Apply[AddToSolutionFrontierHelper, GetSolutionInfoHelper[sol]], 
@@ -274,12 +274,15 @@ BeginPackage["EureqaClient`"];
     (*SolutionFrontierToMatrix[front_SolutionFrontier] := *)
     SolutionFrontierGrid[front_SolutionFrontier] := Module[{fields, gridItems, 
                                                             infos, header},
+                                                                    
         gridItems = SolutionFrontierToMatrix[front];
+        gridItems = gridItems[[All, 2;;]];
         fields = gridItems[[1]];
         header = {Map[Style[SymbolName[#], Bold]&, fields]};
         If[Length[front] > 0,
             gridItems = Join[header, Rest[gridItems]],
             gridItems = {header}];
+        (* Drop the age column since it doesn't contain anything yet. *)
         Framed[Grid[gridItems, 
              ItemSize -> Scaled[1/Length[header[[1]]]], Alignment -> Left
              ]]
