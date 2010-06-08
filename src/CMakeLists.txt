@@ -34,5 +34,6 @@ add_dependencies(run install_workaround)
 add_custom_target(debug 
                   COMMAND gdb --args eureqaml)
 
+
 add_dependencies(debug install_workaround)
 

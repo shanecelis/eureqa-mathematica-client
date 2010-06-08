@@ -1,5 +1,13 @@
+/*
+  eureqaml.cpp
+  
+  This file contains the C portion of the code for the Eureqa client.
+
+  Written by Shane Celis.
+*/
+  
 /* To launch this program from within Mathematica use:
- *   In[1]:= link = Install["addtwo"]
+ *   In[1]:= link = Install["eureqaml"]
  *
  * Or, launch this program from a shell and establish a
  * peer-to-peer connection.  When given the prompt Create Link:
@@ -14,6 +22,10 @@
 #include <eureqa/eureqa.h>
 #include <boost/unordered_map.hpp>
 #include <cstring>
+
+#if WIN32
+#define snprintf sprintf_s
+#endif
 
 extern "C" {
 #include "mathlink.h"
@@ -120,7 +132,6 @@ class StringGetSet : public GetSet {
             FAILED_WITH_MESSAGE("SendOptions::failstr");
             return 2;
         }
-        printf("StringGetSet got '%s' for option '%s'\n", str, sym);
         data = str;
         MLReleaseString(stdlink, str);
         return 0;
@@ -463,6 +474,10 @@ void _send_options_explicit(int n)
         return;
     }
     
+    /*
+      XXX - This should report back if it has an error parsing the
+      search relationship.  Or there should be a way to check.
+     */
     if (conn.send_options(options)) {
         MLPutSymbol(stdlink, (char *) "Null");        
     } else {
@@ -570,7 +585,14 @@ void _query_progress()
 {
     if (ensure_connected("QueryProgress")) return;
     eureqa::search_progress progress; // recieves the progress and new solutions
-    if (conn.query_progress(progress)) {
+    int res;
+    try {
+        res = conn.query_progress(progress);
+    } catch(const boost::archive::archive_exception& ae ) {
+        FAILED_WITH_MESSAGE("QueryProgress::arcerr");        
+        return;
+    }
+    if (res) {
         // SearchProgress[Solution -> soln, Generations -> g, GenerationsPerSec -> gps, Evaluations -> e, EvaluationsPerSec -> eps, TotalPopulationSize -> s]
         MLPutFunction(stdlink, (char *) "SearchProgress", 6); 
           MLPutFunction(stdlink, (char *) "Rule", 2);
@@ -609,8 +631,8 @@ void _query_frontier() {
 }
 
 void put_solution_frontier(eureqa::solution_frontier &front) {
-    MLPutFunction(stdlink, (char *) "SolutionFrontier", 1); 
-      MLPutFunction(stdlink, (char *) "List", front.size());
+    MLPutFunction(stdlink, (char *) "SolutionFrontier", front.size());//1); 
+    //MLPutFunction(stdlink, (char *) "List", front.size());
         //MLPutInteger(stdlink, next_front_id);
         for (int i = 0; i < front.size(); i++) {
           put_solution_info(front[i]);

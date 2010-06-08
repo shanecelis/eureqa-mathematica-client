@@ -3,8 +3,8 @@
 
 :Begin:
 :Function:       _connect
-:Pattern:        ConnectTo[host_String]
-:Arguments:      { host }
+:Pattern:        ConnectTo[EureqaClient`Private`host_String]
+:Arguments:      { EureqaClient`Private`host }
 :ArgumentTypes:  { String }
 :ReturnType:     Manual
 :End:
@@ -34,8 +34,8 @@
 
 :Begin:
 :Function:       _send_data_set
-:Pattern:        SendDataSet[data_?MatrixQ]
-:Arguments:      {data}
+:Pattern:        SendDataSet[EureqaClient`Private`data_?MatrixQ]
+:Arguments:      {EureqaClient`Private`data}
 :ArgumentTypes:  {Manual}
 :ReturnType:     Manual
 :End:
@@ -44,8 +44,8 @@
 
 :Begin:
 :Function:       _send_data_set_labels
-:Pattern:        SendDataSet[data_?MatrixQ, labels_List]
-:Arguments:      {data, labels}
+:Pattern:        SendDataSet[EureqaClient`Private`data_?MatrixQ, EureqaClient`Private`labels_List]
+:Arguments:      {EureqaClient`Private`data, EureqaClient`Private`labels}
 :ArgumentTypes:  {Manual}
 :ReturnType:     Manual
 :End:
@@ -55,8 +55,8 @@
 
 :Begin:
 :Function:       _send_options
-:Pattern:        SendOptions[model_String]
-:Arguments:      {model}
+:Pattern:        SendOptions[EureqaClient`Private`model_String]
+:Arguments:      {EureqaClient`Private`model}
 :ArgumentTypes:  {String}
 :ReturnType:     Manual
 :End:
@@ -65,8 +65,8 @@
 
 :Begin:
 :Function:       _send_options_explicit
-:Pattern:        SendOptions[options__Rule]
-:Arguments:      {Length[List[options]], options}
+:Pattern:        SendOptions[EureqaClient`Private`options__Rule]
+:Arguments:      {Length[List[EureqaClient`Private`options]], EureqaClient`Private`options}
 :ArgumentTypes:  {Integer, Manual}
 :ReturnType:     Manual
 :End:
@@ -145,10 +145,12 @@
 
 // void _add_to_solution_frontier_helper P(());
 
+// I hope there's a better way to avoid symbol pollution than this!
 :Begin:
 :Function:       _add_to_solution_frontier_helper
-:Pattern:        AddToSolutionFrontierHelper[text_String, score_Real, fitness_Real, complexity_Real, age_Integer]
-:Arguments:      {text, score, fitness, complexity, age}
+:Pattern:        AddToSolutionFrontierHelper[EureqaClient`Private`text_String, 
+                 EureqaClient`Private`score_Real, EureqaClient`Private`fitness_Real, EureqaClient`Private`complexity_Real, EureqaClient`Private`age_Integer]
+:Arguments:      {EureqaClient`Private`text, EureqaClient`Private`score, EureqaClient`Private`fitness, EureqaClient`Private`complexity, EureqaClient`Private`age}
 :ArgumentTypes:  {String, Real64, Real64, Real64, Integer }
 :ReturnType:     Manual
 :End:

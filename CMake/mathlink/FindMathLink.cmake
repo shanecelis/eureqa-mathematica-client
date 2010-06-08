@@ -82,6 +82,7 @@ find_program(MathLink_MPREP_EXECUTABLE
   PATHS ${MathLink_ROOT_DIR}/CompilerAdditions
         ${MathLink_ROOT_DIR}\\CompilerAdditions\\mldev32\\bin
         ${MathLink_ROOT_DIR}\\CompilerAdditions\\mldev64\\bin
+        ${MathLink_ROOT_DIR}\\..\\..\\..\\..\\Kernel\\Binaries\\${MathLink_SYS}
       )
 mark_as_advanced(MathLink_MPREP_EXECUTABLE)
 find_program(MathLink_MATH_EXECUTABLE 
@@ -89,6 +90,7 @@ find_program(MathLink_MATH_EXECUTABLE
   PATHS ${MathLink_ROOT_DIR}/CompilerAdditions
         ${MathLink_ROOT_DIR}\\CompilerAdditions\\mldev32\\bin
         ${MathLink_ROOT_DIR}\\CompilerAdditions\\mldev64\\bin
+        ${MathLink_ROOT_DIR}\\..\\..\\..\\..\\Kernel\\Binaries\\${MathLink_SYS}
       )
 mark_as_advanced(MathLink_MATH_EXECUTABLE)
 
