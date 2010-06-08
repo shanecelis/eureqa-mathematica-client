@@ -10,6 +10,11 @@ Client for Mathematica, so that Mathematica users can easily connect
 to a Eureqa server and search through data for relationships. (See
 this [paper][paper] for details of the search method used.)
 
+See the client [demo here](http://www.screencast.com/t/YTY5Zjk2).
+
+<center><a href="http://www.screencast.com/t/YTY5Zjk2">
+<img width="60%" height="60%"src="http://gnufoo.org/eureqa-demo-screen.png"></a></center>
+
 
 [eq]: http://ccsl.mae.cornell.edu/eureqa
 [ms]: https://sites.google.com/a/cornell.edu/schmidt/
@@ -30,6 +35,11 @@ client.
 Building
 --------
 
+[The source code](http://github.com/secelis/eureqa-mathematica-client)
+is available on github.  No binaries are available.
+
+    $ git clone git://github.com/secelis/eureqa-mathematica-client.git
+    $ cd eureqa-mathematica-client
     $ cmake .
     $ make
     $ make install
@@ -64,7 +74,7 @@ The client currently
 
 * can only handle one connection;
 * needs more documentation; 
-* has no integrated plotting; and
+* does no auto plots; and
 * does not calculate different error metrics automatically.
 
 Soliciting Contributions
